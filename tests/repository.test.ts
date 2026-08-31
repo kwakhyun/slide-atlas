@@ -33,7 +33,10 @@ describe("PostgreSQL-backed operations", () => {
   it("seeds independent visitor workspaces", async () => {
     const state = await getWorkspaceState(db, a);
     expect(state.templates).toHaveLength(18);
+    expect(state.templates[0].slots.length).toBeGreaterThan(0);
+    expect(state.templates[0].version).toBe(1);
     expect(state.decks).toHaveLength(1);
+    expect(state.decks[0].slides).toHaveLength(4);
     expect(state.events).toHaveLength(1);
   });
   it("isolates template and deck reads by the server-resolved workspace", async () => {

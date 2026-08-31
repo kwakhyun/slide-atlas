@@ -24,6 +24,9 @@ const hash = (token: string) =>
 const searchText = (t: TemplateInput) =>
   `${t.name} ${t.description} ${t.tags.join(" ")} ${t.intent} ${t.layout}`;
 
+// JSON is serialized by the repository. Bind it as text before casting to
+// JSONB so postgres.js does not JSON-encode the already serialized string.
+
 export async function appendEvent(
   db: DbSession,
   workspaceId: string,
@@ -49,7 +52,7 @@ export async function createWorkspace(
     ]);
     for (const t of SEED_TEMPLATES)
       await tx.query(
-        "INSERT INTO templates (workspace_id,id,name,intent,layout,status,version,search_text,data) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)",
+        "INSERT INTO templates (workspace_id,id,name,intent,layout,status,version,search_text,data) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text::jsonb)",
         [
           workspaceId,
           t.id,
@@ -74,7 +77,7 @@ export async function createWorkspace(
       updatedAt: now,
     };
     await tx.query(
-      "INSERT INTO decks (workspace_id,id,data) VALUES ($1,$2,$3::jsonb)",
+      "INSERT INTO decks (workspace_id,id,data) VALUES ($1,$2,$3::text::jsonb)",
       [workspaceId, deck.id, JSON.stringify(deck)],
     );
     await appendEvent(
@@ -163,7 +166,7 @@ async function writeTemplate(
   t: SlideTemplate,
 ) {
   await tx.query(
-    "UPDATE templates SET name=$3,intent=$4,layout=$5,status=$6,version=$7,search_text=$8,data=$9::jsonb,updated_at=NOW() WHERE workspace_id=$1 AND id=$2",
+    "UPDATE templates SET name=$3,intent=$4,layout=$5,status=$6,version=$7,search_text=$8,data=$9::text::jsonb,updated_at=NOW() WHERE workspace_id=$1 AND id=$2",
     [
       workspaceId,
       t.id,
@@ -202,7 +205,7 @@ export async function insertTemplate(
       "데모에서는 템플릿을 100개까지 등록할 수 있습니다.",
     );
     await tx.query(
-      "INSERT INTO templates (workspace_id,id,name,intent,layout,status,version,search_text,data) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)",
+      "INSERT INTO templates (workspace_id,id,name,intent,layout,status,version,search_text,data) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text::jsonb)",
       [
         workspaceId,
         t.id,
@@ -363,7 +366,7 @@ export async function insertDeck(
       "데모에서는 프레젠테이션을 50개까지 저장할 수 있습니다.",
     );
     await tx.query(
-      "INSERT INTO decks(workspace_id,id,version,data) VALUES($1,$2,$3,$4::jsonb)",
+      "INSERT INTO decks(workspace_id,id,version,data) VALUES($1,$2,$3,$4::text::jsonb)",
       [workspaceId, deck.id, deck.version, JSON.stringify(deck)],
     );
     await appendEvent(
@@ -409,7 +412,7 @@ export async function updateDeck(
       updatedAt: new Date().toISOString(),
     };
     await tx.query(
-      "UPDATE decks SET version=$3,data=$4::jsonb,updated_at=NOW() WHERE workspace_id=$1 AND id=$2",
+      "UPDATE decks SET version=$3,data=$4::text::jsonb,updated_at=NOW() WHERE workspace_id=$1 AND id=$2",
       [workspaceId, id, next.version, JSON.stringify(next)],
     );
     await appendEvent(
@@ -430,7 +433,7 @@ export async function insertExperiment(
 ) {
   await db.transaction(async (tx) => {
     await tx.query(
-      "INSERT INTO experiments(workspace_id,id,data) VALUES($1,$2,$3::jsonb)",
+      "INSERT INTO experiments(workspace_id,id,data) VALUES($1,$2,$3::text::jsonb)",
       [workspaceId, experiment.id, JSON.stringify(experiment)],
     );
     await tx.query(

@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Vercel packages functions itself; standalone is for self-hosting/Docker.
+  output: process.env.VERCEL ? undefined : "standalone",
   poweredByHeader: false,
   serverExternalPackages: ["@electric-sql/pglite", "postgres"],
   outputFileTracingIncludes: { "/api/*": ["./db/migrations/*.sql"] },
