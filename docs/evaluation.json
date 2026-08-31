@@ -1,0 +1,484 @@
+{
+  "id": "atlas-seed-evaluation-v1",
+  "name": "키워드 검색 vs 구조 기반 검색",
+  "createdAt": "2026-08-31T01:04:10.679Z",
+  "durationMs": 12.04,
+  "datasetVersion": "atlas-dev-ko-en-v1",
+  "catalogVersion": "atlas-editorial-01@1:approved|atlas-editorial-02@1:approved|atlas-editorial-03@1:draft|atlas-hero-01@1:approved|atlas-hero-02@1:approved|atlas-hero-03@1:in_review|atlas-metrics-01@1:approved|atlas-metrics-02@1:approved|atlas-metrics-03@1:draft|atlas-split-01@1:approved|atlas-split-02@1:approved|atlas-split-03@1:in_review|atlas-steps-01@1:approved|atlas-steps-02@1:approved|atlas-steps-03@1:in_review|atlas-timeline-01@1:approved|atlas-timeline-02@1:approved|atlas-timeline-03@1:rejected",
+  "size": 24,
+  "lexical": {
+    "hitAt1": 0.7083333333333334,
+    "mrr": 0.7430555555555555
+  },
+  "structure": {
+    "hitAt1": 0.9166666666666666,
+    "mrr": 0.9166666666666666
+  },
+  "results": [
+    {
+      "id": "overview-0",
+      "query": "한 장으로 전하는 서비스 소개",
+      "expected": [
+        "atlas-hero-01",
+        "atlas-hero-02"
+      ],
+      "lexicalIds": [
+        "atlas-editorial-01",
+        "atlas-editorial-02",
+        "atlas-hero-01"
+      ],
+      "structureIds": [
+        "atlas-hero-01",
+        "atlas-hero-02",
+        "atlas-editorial-01"
+      ],
+      "lexicalHit": false,
+      "structureHit": true,
+      "lexicalRR": 0.3333333333333333,
+      "structureRR": 1
+    },
+    {
+      "id": "overview-1",
+      "query": "브랜드가 나아갈 방향",
+      "expected": [
+        "atlas-hero-01",
+        "atlas-hero-02"
+      ],
+      "lexicalIds": [],
+      "structureIds": [],
+      "lexicalHit": false,
+      "structureHit": false,
+      "lexicalRR": 0,
+      "structureRR": 0
+    },
+    {
+      "id": "overview-2",
+      "query": "Opening vision for a new product",
+      "expected": [
+        "atlas-hero-01",
+        "atlas-hero-02"
+      ],
+      "lexicalIds": [
+        "atlas-split-02",
+        "atlas-hero-01",
+        "atlas-hero-02"
+      ],
+      "structureIds": [
+        "atlas-hero-01",
+        "atlas-hero-02",
+        "atlas-split-02"
+      ],
+      "lexicalHit": false,
+      "structureHit": true,
+      "lexicalRR": 0.5,
+      "structureRR": 1
+    },
+    {
+      "id": "overview-3",
+      "query": "발표의 첫 페이지 핵심 요약",
+      "expected": [
+        "atlas-hero-01",
+        "atlas-hero-02"
+      ],
+      "lexicalIds": [
+        "atlas-hero-01"
+      ],
+      "structureIds": [
+        "atlas-hero-01",
+        "atlas-hero-02"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "comparison-0",
+      "query": "도입 이전과 이후의 차이",
+      "expected": [
+        "atlas-split-01",
+        "atlas-split-02"
+      ],
+      "lexicalIds": [],
+      "structureIds": [
+        "atlas-split-01",
+        "atlas-split-02"
+      ],
+      "lexicalHit": false,
+      "structureHit": true,
+      "lexicalRR": 0,
+      "structureRR": 1
+    },
+    {
+      "id": "comparison-1",
+      "query": "두 옵션의 장단점을 나란히",
+      "expected": [
+        "atlas-split-01",
+        "atlas-split-02"
+      ],
+      "lexicalIds": [
+        "atlas-split-01"
+      ],
+      "structureIds": [
+        "atlas-split-01",
+        "atlas-split-02"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "comparison-2",
+      "query": "Before and after workflow",
+      "expected": [
+        "atlas-split-01",
+        "atlas-split-02"
+      ],
+      "lexicalIds": [
+        "atlas-split-02"
+      ],
+      "structureIds": [
+        "atlas-split-02",
+        "atlas-split-01"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "comparison-3",
+      "query": "현재 방식과 개선안 비교",
+      "expected": [
+        "atlas-split-01",
+        "atlas-split-02"
+      ],
+      "lexicalIds": [
+        "atlas-split-01"
+      ],
+      "structureIds": [
+        "atlas-split-01",
+        "atlas-split-02"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "metrics-0",
+      "query": "이번 분기 매출 성장 핵심 지표",
+      "expected": [
+        "atlas-metrics-01",
+        "atlas-metrics-02"
+      ],
+      "lexicalIds": [
+        "atlas-metrics-01",
+        "atlas-metrics-02",
+        "atlas-hero-01"
+      ],
+      "structureIds": [
+        "atlas-metrics-01",
+        "atlas-metrics-02",
+        "atlas-timeline-01"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "metrics-1",
+      "query": "세 가지 숫자로 성과 설명",
+      "expected": [
+        "atlas-metrics-01",
+        "atlas-metrics-02"
+      ],
+      "lexicalIds": [
+        "atlas-metrics-01",
+        "atlas-metrics-02",
+        "atlas-split-01"
+      ],
+      "structureIds": [
+        "atlas-metrics-01",
+        "atlas-metrics-02",
+        "atlas-steps-01"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "metrics-2",
+      "query": "Revenue and conversion metrics",
+      "expected": [
+        "atlas-metrics-01",
+        "atlas-metrics-02"
+      ],
+      "lexicalIds": [
+        "atlas-metrics-02"
+      ],
+      "structureIds": [
+        "atlas-metrics-02",
+        "atlas-metrics-01"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "metrics-3",
+      "query": "캠페인 성과 스코어카드",
+      "expected": [
+        "atlas-metrics-01",
+        "atlas-metrics-02"
+      ],
+      "lexicalIds": [
+        "atlas-metrics-02",
+        "atlas-metrics-01"
+      ],
+      "structureIds": [
+        "atlas-metrics-02",
+        "atlas-metrics-01"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "process-0",
+      "query": "회원가입에서 결제까지 사용자 여정",
+      "expected": [
+        "atlas-steps-01",
+        "atlas-steps-02"
+      ],
+      "lexicalIds": [
+        "atlas-steps-02"
+      ],
+      "structureIds": [
+        "atlas-steps-02",
+        "atlas-steps-01"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "process-1",
+      "query": "반복 업무를 줄이는 세 단계",
+      "expected": [
+        "atlas-steps-01",
+        "atlas-steps-02"
+      ],
+      "lexicalIds": [
+        "atlas-steps-01"
+      ],
+      "structureIds": [
+        "atlas-steps-01",
+        "atlas-steps-02"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "process-2",
+      "query": "Three-step onboarding workflow",
+      "expected": [
+        "atlas-steps-01",
+        "atlas-steps-02"
+      ],
+      "lexicalIds": [],
+      "structureIds": [
+        "atlas-steps-01",
+        "atlas-steps-02"
+      ],
+      "lexicalHit": false,
+      "structureHit": true,
+      "lexicalRR": 0,
+      "structureRR": 1
+    },
+    {
+      "id": "process-3",
+      "query": "운영팀의 업무 절차와 순서",
+      "expected": [
+        "atlas-steps-01",
+        "atlas-steps-02"
+      ],
+      "lexicalIds": [
+        "atlas-steps-02"
+      ],
+      "structureIds": [
+        "atlas-steps-02",
+        "atlas-steps-01"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "timeline-0",
+      "query": "다음 분기 출시 마일스톤",
+      "expected": [
+        "atlas-timeline-01",
+        "atlas-timeline-02"
+      ],
+      "lexicalIds": [
+        "atlas-timeline-01",
+        "atlas-timeline-02"
+      ],
+      "structureIds": [
+        "atlas-timeline-01",
+        "atlas-timeline-02"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "timeline-1",
+      "query": "월별 실행 계획",
+      "expected": [
+        "atlas-timeline-01",
+        "atlas-timeline-02"
+      ],
+      "lexicalIds": [
+        "atlas-timeline-02",
+        "atlas-steps-01"
+      ],
+      "structureIds": [
+        "atlas-timeline-02",
+        "atlas-timeline-01",
+        "atlas-steps-01"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "timeline-2",
+      "query": "Product roadmap and schedule",
+      "expected": [
+        "atlas-timeline-01",
+        "atlas-timeline-02"
+      ],
+      "lexicalIds": [
+        "atlas-timeline-01",
+        "atlas-timeline-02"
+      ],
+      "structureIds": [
+        "atlas-timeline-01",
+        "atlas-timeline-02"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "timeline-3",
+      "query": "핵심 일정과 단계별 목표",
+      "expected": [
+        "atlas-timeline-01",
+        "atlas-timeline-02"
+      ],
+      "lexicalIds": [
+        "atlas-hero-01"
+      ],
+      "structureIds": [
+        "atlas-hero-01",
+        "atlas-hero-02"
+      ],
+      "lexicalHit": false,
+      "structureHit": false,
+      "lexicalRR": 0,
+      "structureRR": 0
+    },
+    {
+      "id": "insight-0",
+      "query": "리서치에서 얻은 중요한 배움",
+      "expected": [
+        "atlas-editorial-01",
+        "atlas-editorial-02"
+      ],
+      "lexicalIds": [
+        "atlas-editorial-01"
+      ],
+      "structureIds": [
+        "atlas-editorial-01",
+        "atlas-editorial-02"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "insight-1",
+      "query": "데이터 해석과 다음 시사점",
+      "expected": [
+        "atlas-editorial-01",
+        "atlas-editorial-02"
+      ],
+      "lexicalIds": [
+        "atlas-editorial-02",
+        "atlas-timeline-01"
+      ],
+      "structureIds": [
+        "atlas-editorial-02",
+        "atlas-editorial-01",
+        "atlas-timeline-01"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    },
+    {
+      "id": "insight-2",
+      "query": "Key takeaway from customer research",
+      "expected": [
+        "atlas-editorial-01",
+        "atlas-editorial-02"
+      ],
+      "lexicalIds": [],
+      "structureIds": [
+        "atlas-editorial-01",
+        "atlas-editorial-02"
+      ],
+      "lexicalHit": false,
+      "structureHit": true,
+      "lexicalRR": 0,
+      "structureRR": 1
+    },
+    {
+      "id": "insight-3",
+      "query": "회고에서 발견한 새로운 관점",
+      "expected": [
+        "atlas-editorial-01",
+        "atlas-editorial-02"
+      ],
+      "lexicalIds": [
+        "atlas-editorial-01"
+      ],
+      "structureIds": [
+        "atlas-editorial-01",
+        "atlas-editorial-02"
+      ],
+      "lexicalHit": true,
+      "structureHit": true,
+      "lexicalRR": 1,
+      "structureRR": 1
+    }
+  ],
+  "disclaimer": "Author-written synthetic development set; not a held-out benchmark or user-impact measurement."
+}

@@ -1,0 +1,14 @@
+node_modules
+.next
+.data
+.artifacts
+.tools
+.vercel
+test-results
+playwright-report
+coverage
+package-lock.json
+AGENTS.md
+CLAUDE.md
+public/fonts
+docs/evaluation.json
