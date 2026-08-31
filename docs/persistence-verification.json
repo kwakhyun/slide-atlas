@@ -1,0 +1,15 @@
+{
+  "verifiedAt": "2026-08-31T02:57:38.679Z",
+  "origin": "https://slide-atlas-mu.vercel.app",
+  "storage": "postgres",
+  "beforeDeployment": "dpl_C9Xayf1u4nUyaJGuECJH931vmo2i",
+  "afterDeployment": "dpl_2tdBZ2hNPGz93v3sc9yqi6jQoX8B",
+  "titleRetained": true,
+  "versionRetained": true,
+  "contentRetained": true,
+  "slideCount": 2,
+  "version": 2,
+  "contentSha256": "b24c2f670a4d7d508593acb0b8b046a1c2b9b7c8ea95a668cd6cbcaa7d0e681a",
+  "hashMethod": "SHA-256을 계산하기 전에 JSON 객체의 키를 정렬합니다. 배열 순서와 모든 값은 그대로 유지하며, 중첩된 객체와 배열의 값도 모두 비교합니다.",
+  "scope": "독립된 데모 세션에 검증용 프레젠테이션을 저장한 뒤, 새로운 Vercel 운영 배포에서 다시 조회했습니다. 실제 고객 자료와 OpenAI 호출은 사용하지 않았습니다."
+}

@@ -1,27 +1,29 @@
-# Security scope
+# 보안 정책과 한계
 
-Slide Atlas is an independent portfolio demonstrator, not a multi-user enterprise system. Do not submit personal data, customer materials, private company templates, or confidential briefs to the public demo.
+Slide Atlas는 개인 포트폴리오용 데모입니다. 여러 조직이 업무에 사용하는 기업용 시스템의 보안 요건을 모두 충족하지는 않습니다. 공개 데모에 개인정보, 고객 자료, 회사의 비공개 템플릿이나 기밀 내용을 입력하지 마세요.
 
-## Implemented controls
+## 적용한 보호 조치
 
-- Random 256-bit session token in an HttpOnly, SameSite=Lax cookie; Secure on HTTPS. Only its SHA-256 hash is stored server-side.
-- Every repository read/write is scoped to a server-resolved workspace. A caller cannot select a workspace by a query or JSON field.
-- Parameterized SQL, Zod input contracts, JSON-only mutation payloads, bounded streamed request bodies, origin checks, and explicit state transitions.
-- Transactional audit events and version conflicts instead of silent last-write-wins.
-- Private/no-store API responses, escaped SVG/XML text, attachment export, no user HTML evaluation or remote image fetching.
-- CSP, frame denial, nosniff, referrer policy. `unsafe-eval` is development-only; production currently permits inline hydration scripts/styles, so this is not a nonce-based strict CSP.
-- Public AI disabled by default; server-side key, invite code, output schema validation, request timeout and global daily request cap. Serverless AI requires an external PostgreSQL URL so the cap is shared across instances.
-- No API credentials in client bundles or application error responses. Provider text and incoming briefs are not logged.
+- 무작위 256비트 세션 토큰을 `HttpOnly`, `SameSite=Lax` 쿠키로 발급하며, HTTPS에서는 `Secure` 속성도 적용합니다. 서버에는 토큰의 SHA-256 해시만 저장합니다.
+- 모든 데이터 조회와 변경은 서버가 세션에서 확인한 작업 공간으로 제한합니다. 요청자가 URL이나 JSON에 작업 공간 ID를 넣어 다른 공간을 선택할 수 없습니다.
+- SQL 파라미터 바인딩, Zod 입력 검증, JSON 형식 제한, 스트리밍 요청 본문의 크기 제한, 요청 출처 확인, 검수 상태 전이 규칙을 적용합니다.
+- 데이터 변경과 감사 이력을 하나의 트랜잭션으로 기록하며, 동시 수정 충돌을 감지하면 기존 내용을 덮어쓰지 않고 오류를 반환합니다.
+- API 응답에 `private, no-store`를 설정하고 SVG·XML에 들어가는 텍스트를 이스케이프 처리합니다. 내보내기는 첨부 파일 응답으로 제공하며, 사용자 HTML을 실행하거나 외부 이미지를 가져오지 않습니다.
+- CSP, 프레임 삽입 차단, `nosniff`, Referrer Policy를 적용합니다. `unsafe-eval`은 개발 환경에서만 허용합니다. 운영 환경에는 인라인 스크립트와 스타일을 허용하므로 nonce 기반의 엄격한 CSP는 아닙니다.
+- 실제 AI 호출은 기본적으로 비활성화합니다. 서버 전용 키, 초대 코드, 출력 검증, 응답 시간 제한, 서비스 전체의 일별 요청 한도를 적용하며, 서버리스 환경에서는 외부 PostgreSQL을 통해 요청 수를 공유하도록 합니다.
+- 클라이언트 코드나 오류 응답에 API 자격 증명을 포함하지 않습니다. 모델이 반환한 본문과 사용자가 입력한 브리프는 로그에 남기지 않습니다.
 
-## Known limits
+## 현재의 한계
 
-- Cookie spaces isolate demonstration visitors; they are not accounts, SSO, RBAC, or a guarantee of access after clearing cookies.
-- PostgreSQL row-level security is not enabled. Isolation is enforced by repository queries and tested across independent sessions. An enterprise system should add defense in depth and separate reviewer permissions.
-- Rate limiting is per anonymous session, except for the global AI cap. It is not bot protection and can be bypassed by creating new anonymous sessions. Use platform firewall/rate policies before operating at scale.
-- Workspace capacity is capped, but admission and per-workspace object counts are not hardened distributed quotas. No load or denial-of-service certification is claimed.
-- Seven-day expiration is checked on access; expired data is physically cleaned on the next new workspace. There is no promised background purge SLA.
-- Text-fit checks estimate font metrics. Numeric matching does not validate meaning, units, truth, or whether a claim belongs to that number. Human review remains necessary.
-- Template history currently detects version drift but does not store immutable historical geometry.
-- The public preview is not a place for third-party file uploads; JSON imports accept only the bounded ontology schema. PPTX import is not supported.
+- 쿠키는 방문자별 데모 데이터를 구분하는 수단입니다. 계정, SSO, 역할 기반 접근 제어를 제공하지 않으며, 쿠키를 지우면 기존 작업에 다시 접근하지 못할 수 있습니다.
+- PostgreSQL의 행 수준 보안(RLS)은 적용하지 않았습니다. 현재는 데이터 접근 계층의 쿼리로 작업 공간을 구분하고, 서로 다른 세션의 접근을 테스트합니다. 기업용으로 확장할 때는 DB 차원의 보호 조치와 검수자 권한 분리가 추가로 필요합니다.
+- AI 전체 한도를 제외한 요청 제한은 익명 세션별로 적용합니다. 새로운 세션을 만들면 제한을 우회할 수 있으므로 봇 방어 수단으로 볼 수는 없습니다. 규모를 확대하기 전 플랫폼 방화벽과 요청 제한 정책을 함께 적용해야 합니다.
+- 작업 공간과 저장 항목 수에 상한을 두었지만, 여러 서버가 동시에 접근하는 상황까지 엄밀하게 통제하는 분산 할당량은 구현하지 않았습니다. 부하나 서비스 거부 공격에 대한 별도 인증도 받지 않았습니다.
+- 접근 시 7일 만료 여부를 확인하고, 만료된 데이터는 다음 작업 공간 생성 시 삭제합니다. 일정한 주기로 백그라운드 삭제를 수행하거나 삭제 완료 시간을 보장하지는 않습니다.
+- 텍스트 넘침은 글꼴 폭을 추정해 검사합니다. 수치 일치 검사는 의미·단위·사실 여부나 수치와 주장의 연결 관계까지 확인하지 못하므로 사람이 결과를 검토해야 합니다.
+- 템플릿 버전 변경은 감지하지만, 과거 배치 정보를 변경 불가능한 사본으로 보관하지는 않습니다.
+- JSON 가져오기는 크기와 구조가 제한된 온톨로지 데이터만 허용합니다. 임의의 파일 업로드나 PPTX 가져오기는 지원하지 않습니다.
 
-To report a problem, use the repository's private vulnerability reporting feature if enabled. Otherwise open an issue describing impact without posting credentials, user content, or exploit data that exposes another visitor. Never paste an API key into an issue or chat; rotate exposed credentials with the provider.
+## 문제를 발견하셨을 때
+
+저장소에서 비공개 취약점 제보 기능이 활성화되어 있다면 해당 기능을 이용해 주세요. 활성화되어 있지 않다면 자격 증명, 사용자 내용, 다른 방문자의 데이터를 노출하는 재현 자료를 제외하고 영향 범위를 이슈로 알려 주세요. API 키를 이슈나 채팅에 붙여넣지 마시고, 이미 노출된 키는 제공업체에서 폐기하고 새 키로 교체해 주세요.
