@@ -4,7 +4,11 @@
 
 [![Verify product](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml)
 
-[프로젝트 기획](docs/product-brief.md) · [아키텍처](docs/architecture.md) · [REST API](docs/api.md) · [평가 원본](docs/evaluation.json) · [보안·한계](SECURITY.md)
+**[라이브 데모 열기](https://slide-atlas-mu.vercel.app)** · [PostgreSQL CI 통과 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33348337474)
+
+로그인이나 API 키 없이 체험할 수 있다. 현재 공개 배포는 **규칙 기반 생성 + 임시 세션 저장**이며, 서버 재시작·인스턴스 변경 시 작업이 초기화될 수 있다. 보관할 결과는 PPTX 또는 JSON으로 내려받는다. 외부 PostgreSQL과 실제 OpenAI 호출은 공개 환경에서 아직 활성화하지 않았다.
+
+[프로젝트 기획](docs/product-brief.md) · [아키텍처](docs/architecture.md) · [REST API](docs/api.md) · [배포·검증 기록](docs/verification.md) · [평가 원본](docs/evaluation.json) · [보안·한계](SECURITY.md)
 
 ![Slide Atlas — 실제 스튜디오 화면](docs/screenshots/studio.png)
 
@@ -103,17 +107,19 @@ flowchart LR
 
 ## 검증 증거
 
-| 범위                                   | 로컬 프로덕션 검증 결과                                                            |
-| -------------------------------------- | ---------------------------------------------------------------------------------- |
-| TypeScript / ESLint / production build | 통과                                                                               |
-| Vitest                                 | **53개 통과**: 스키마·검색·품질·PPTX·DB 트랜잭션·격리·AI 계약                      |
-| Playwright                             | **17개 통과**: 생성·저장·스타일 유지·다운로드·발표·등록·검수·평가·API 실패 경계    |
-| 접근성                                 | 5개 화면 × 1440px/390px, 대화상자에 axe WCAG A/AA 자동 위반 없음; 키보드 순환 확인 |
-| 독립 PPTX 파싱                         | Python-pptx: 4장, 편집 가능한 텍스트 상자 46개, 발표자 노트 4개; XML well-formed   |
-| 의존성 검사                            | `npm audit`: 취약점 0개, 검사 시점 2026-08-31                                      |
-| 평가 재현                              | `npm run eval -- --check` 통과                                                     |
+| 범위                                   | 검증 결과 · 2026-08-31                                                                           |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| TypeScript / ESLint / production build | 통과                                                                                             |
+| Vitest                                 | **53개 통과**: 스키마·검색·품질·PPTX·DB 트랜잭션·격리·AI 계약                                    |
+| Playwright                             | 로컬·PostgreSQL CI·공개 Vercel URL에서 각각 **17개 통과**: 생성·저장·다운로드·검수·평가·API 경계 |
+| 접근성                                 | 5개 화면 × 1440px/390px, 대화상자에 axe WCAG A/AA 자동 위반 없음; 키보드 순환 확인               |
+| 독립 PPTX 파싱                         | Python-pptx: 4장, 편집 가능한 텍스트 상자 46개, 발표자 노트 4개; XML well-formed                 |
+| 의존성 검사                            | `npm audit`: 취약점 0개, 검사 시점 2026-08-31                                                    |
+| 평가 재현                              | `npm run eval -- --check` 통과                                                                   |
 
-접근성 자동 통과는 모든 보조기술/사용자에 대한 접근성 인증이 아니다. 로컬 DB 테스트는 PGlite를 사용했고, GitHub CI는 PostgreSQL 17 서비스에서도 같은 repository 테스트를 실행하도록 구성했다. CI 실행 결과는 상단 배지와 [Actions](https://github.com/kwakhyun/slide-atlas/actions)에서 별도로 확인한다.
+로컬 PGlite뿐 아니라 **PostgreSQL 17을 사용하는 GitHub CI에서도 전체 파이프라인이 통과**했다. 앱 코드 `8765dec`의 [실행 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33348337474)에서 설치·정적 검사·53개 테스트·평가 재현·빌드·17개 브라우저 시나리오 결과를 확인할 수 있다. 공개 Vercel 주소에서도 같은 17개 시나리오를 별도로 실행했다. 재현 명령과 배포 과정에서 발견·수정한 문제는 [배포·검증 기록](docs/verification.md)에 남겼다.
+
+접근성 자동 통과는 모든 보조기술/사용자에 대한 접근성 인증이 아니다. 공개 URL의 저장 시나리오 통과는 같은 실행 중의 저장·재조회를 확인한 것이며 서버 재시작 이후의 보존을 증명하지 않는다.
 
 ## 로컬 실행
 
