@@ -1,0 +1,31 @@
+{
+  "verifiedAt": "2026-08-31T03:31:33.973Z",
+  "origin": "https://slide-atlas-mu.vercel.app",
+  "transport": "browser-to-live-openai-api",
+  "syntheticBrief": true,
+  "result": "passed",
+  "slideCount": 4,
+  "generation": {
+    "model": "gpt-4.1-mini",
+    "promptVersion": "atlas-slot-adapter-v1",
+    "durationMs": 4656,
+    "inputTokens": 1156,
+    "outputTokens": 291
+  },
+  "checks": {
+    "engineSelectable": true,
+    "incorrectInviteShowsError": true,
+    "generationThroughUi": true,
+    "styleKeepsText": true,
+    "editingAndReload": true,
+    "pptxDownload": true,
+    "presentationNavigation": true,
+    "noBrowserErrors": true
+  },
+  "screenshot": "screenshots/openai-studio.png",
+  "limitations": [
+    "합성 예시 브리프 1건의 실제 사용자 흐름 검증이며 생성 품질의 일반적인 성능은 측정하지 않았습니다."
+  ],
+  "deploymentId": "dpl_3fys1z7krvmChTZkpYUMj8pwCed3",
+  "runtimeSourceCommit": "8765decef18168bff86537aadb95ecfdd698198f"
+}

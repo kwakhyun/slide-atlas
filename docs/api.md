@@ -21,6 +21,8 @@
 
 `provider`에는 `deterministic` 또는 `openai`를 지정합니다. OpenAI를 사용하려면 서버 설정과 함께 `X-AI-Access-Code` 헤더가 필요합니다. 템플릿 JSON 구조는 [domain.ts](../src/lib/domain.ts), 예시 데이터는 [catalog.ts](../src/lib/catalog.ts)를 참고해 주세요. JSON 가져오기는 온톨로지 데이터 등록용이며 `.pptx`나 `.pdf` 파일을 분석하는 기능은 아닙니다.
 
+공개 서비스는 초대 코드 방식의 OpenAI 생성을 활성화했습니다. 초대 코드가 없거나 일치하지 않으면 모델 호출 전에 `403 AI_ACCESS_DENIED`를 반환합니다. 성공한 프레젠테이션의 `generation`에는 `model`, `promptVersion`, `durationMs`, `inputTokens`, `outputTokens`를 기록합니다. 실제 모델 API 키를 요청 본문이나 이 헤더에 넣으시면 안 됩니다.
+
 ## 오류 응답
 
 | HTTP      | 예시 코드                                            | 의미                                 |

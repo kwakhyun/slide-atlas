@@ -61,6 +61,8 @@ AI 연동에는 OpenAI Responses API와 엄격한 JSON Schema를 사용합니다
 
 기본 설정은 `AI_ENABLED=false`이며, 서버 전용 키·활성화 설정·초대 코드가 모두 있어야 동작합니다. 초대 코드는 고정 길이 SHA-256 해시로 변환한 뒤 비교 시간 차이로 정보가 드러나지 않도록 확인합니다. 모델 API 키는 브라우저로 전달하지 않습니다. 요청당 최대 25초, 출력 토큰 최대 4,000개, 세션당 분당 생성 8회, 서비스 전체의 기본 일일 AI 요청 30회로 제한합니다. 일일 한도는 UTC 날짜를 기준으로 계산하며, 실패한 요청도 시도 횟수에 포함합니다. 이 한도를 여러 인스턴스에서 공유해야 하므로 공개 AI 기능을 활성화하려면 외부 DB가 필요합니다.
 
+공개 서비스에는 전용 Neon DB와 `gpt-4.1-mini`를 연결하고 초대 코드 방식의 AI 생성을 활성화했습니다. API 키와 초대 코드는 Vercel Production의 `Secret`으로 관리하며, 미리보기·개발 배포에는 전달하지 않습니다. 실제 연결과 사용 흐름은 [API 검증 기록](live-ai-verification.json)과 [브라우저 검증 기록](live-ai-browser-verification.json)에 남겼습니다. 토큰 수는 API가 반환한 사용량이며 실제 청구 금액은 별도로 검증하지 않았습니다.
+
 원문에 같은 수치가 있는지 확인하는 것만으로 AI의 사실 오류를 막을 수는 없습니다. 수치가 다른 대상에 연결되거나 맥락·단위가 바뀌는 문제, 숫자가 없는 잘못된 주장 등은 사람이 검토해야 합니다. 프롬프트 지시문만으로 안전성을 보장하지 않도록 모델에는 도구 실행, DB 접근, 배포 권한을 부여하지 않았습니다.
 
 구현 시 참고한 공식 문서는 [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [PGlite 파일 시스템](https://pglite.dev/docs/filesystems), [Next.js Route Handlers](https://nextjs.org/docs/app/api-reference/file-conventions/route)입니다.

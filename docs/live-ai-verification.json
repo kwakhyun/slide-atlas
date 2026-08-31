@@ -1,0 +1,37 @@
+{
+  "verifiedAt": "2026-08-31T03:30:03.278Z",
+  "origin": "https://slide-atlas-mu.vercel.app",
+  "transport": "live-openai-api",
+  "syntheticBrief": true,
+  "storage": "postgres",
+  "inviteGuard": {
+    "missing": 403,
+    "incorrect": 403
+  },
+  "result": "passed",
+  "slideCount": 4,
+  "generation": {
+    "model": "gpt-4.1-mini",
+    "promptVersion": "atlas-slot-adapter-v1",
+    "durationMs": 6291,
+    "inputTokens": 1156,
+    "outputTokens": 317
+  },
+  "endToEndDurationMs": 9438,
+  "checks": {
+    "slotSchema": true,
+    "characterLimits": true,
+    "templateAndThemePreserved": true,
+    "sourceNumberGuard": true,
+    "persistedGenerationMetadata": true,
+    "editReload": true,
+    "pptxExport": true,
+    "otherSessionDenied": true
+  },
+  "limitations": [
+    "합성 브리프 1건의 연결 검증이며 생성 품질의 일반적인 성능을 입증하지 않습니다.",
+    "숫자 검사는 원문에 없는 수치의 추가 여부만 확인하며 의미 보존 전체를 보장하지 않습니다."
+  ],
+  "deploymentId": "dpl_3fys1z7krvmChTZkpYUMj8pwCed3",
+  "runtimeSourceCommit": "8765decef18168bff86537aadb95ecfdd698198f"
+}

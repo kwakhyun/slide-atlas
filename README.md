@@ -4,9 +4,9 @@
 
 [![Verify product](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml)
 
-**[라이브 데모 열기](https://slide-atlas-mu.vercel.app)** · [PostgreSQL CI 통과 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33348337474)
+**[라이브 데모 열기](https://slide-atlas-mu.vercel.app)** · [PostgreSQL CI 통과 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33352548854)
 
-로그인이나 API 키 없이 체험하실 수 있습니다. 기본 생성 방식은 **LLM을 호출하지 않는 규칙 기반 모드**이며, 공개 서비스의 작업 데이터는 **전용 Neon PostgreSQL**에 저장합니다. 작업 결과는 PPTX 또는 JSON으로 내려받으실 수 있습니다. 현재 운영 상태와 검증 결과는 [배포·검증 기록](docs/verification.md)에서 확인하실 수 있으며, 실제 OpenAI 호출은 아직 활성화하지 않았습니다.
+로그인이나 API 키 없이 체험하실 수 있습니다. 기본 생성 방식은 **LLM을 호출하지 않는 규칙 기반 모드**이며, 공개 서비스의 작업 데이터는 **전용 Neon PostgreSQL**에 저장합니다. **초대 코드를 받은 분은 OpenAI 생성도 사용하실 수 있습니다.** 작업 결과는 PPTX 또는 JSON으로 내려받으실 수 있으며, 실제 AI 호출을 포함한 운영 상태와 검증 결과는 [배포·검증 기록](docs/verification.md)에 정리했습니다.
 
 [프로젝트 기획](docs/product-brief.md) · [아키텍처](docs/architecture.md) · [REST API](docs/api.md) · [배포·검증 기록](docs/verification.md) · [평가 원본](docs/evaluation.json) · [보안·한계](SECURITY.md)
 
@@ -38,7 +38,7 @@ Slide Atlas는 이 과정을 하나의 서비스로 연결한 **개인 포트폴
 2. **Library → Review — 등록과 검수:** 템플릿을 복제하거나 새로 등록한 뒤 검수를 요청해 보세요. 5자 이상의 검수 근거를 남겨 승인할 수 있습니다. 승인된 템플릿을 다시 수정하면 초안으로 돌아갑니다.
 3. **Experiments — 검색 품질 비교:** `비교 실험 실행`을 눌러 보세요. 같은 24개 질의에 대한 키워드 검색과 구조 검색 결과를 비교하고, 실패 사례와 결과 JSON을 확인하실 수 있습니다.
 
-API 키 없이도 데이터 등록부터 검수, 생성, 편집, 내보내기, 평가까지 전체 과정을 체험하실 수 있습니다. OpenAI 연동 코드는 구현하고 모의 응답으로 테스트했지만, 실제 API 호출의 품질·비용·응답 시간은 아직 검증하지 않았습니다.
+API 키 없이도 규칙 기반 모드로 데이터 등록부터 검수, 생성, 편집, 내보내기, 평가까지 전체 과정을 체험하실 수 있습니다. AI 실험에 참여하실 때는 `생성 엔진 → OpenAI · 초대 코드`를 선택하고 실험용 초대 코드만 입력해 주세요. 실제 모델 API 키는 입력하지 않습니다. OpenAI 생성·저장·편집·내보내기는 합성 브리프로 검증했으며, 일반적인 생성 품질이나 장기 운영 비용을 입증한 결과는 아닙니다.
 
 ## 핵심 구현
 
@@ -79,6 +79,8 @@ OpenAI Responses API와 엄격한 JSON Schema를 사용해 **미리 선택한 �
 
 서버 전용 키, 활성화 설정, 초대 코드, 25초 응답 제한, 출력 토큰 한도, 서비스 전체의 일별 요청 한도를 적용했습니다. 서버리스 환경에서는 요청 한도를 여러 인스턴스가 공유할 수 있도록 외부 PostgreSQL 연결도 요구합니다. 사용한 모델, 프롬프트 버전, 토큰 사용량, 소요 시간은 생성 결과와 함께 기록합니다. [연동 코드](src/server/ai.ts)와 [모의 응답 테스트](tests/ai.test.ts)에서 구현을 확인하실 수 있습니다.
 
+공개 Vercel 서비스에서 `gpt-4.1-mini`로 슬라이드 4장 생성, Neon 저장, 편집 후 재조회, PPTX 내보내기를 확인했습니다. API 검증에서는 생성 모듈 소요 시간 **6.291초**, 입력 **1,156토큰**, 출력 **317토큰**을 기록했습니다. 별도의 브라우저 검증도 통과했으며, [실제 API 검증 기록](docs/live-ai-verification.json)과 [브라우저 검증 기록](docs/live-ai-browser-verification.json)을 공개했습니다. 같은 합성 예시를 사용한 개별 실행 기록이므로 평균 성능이나 사용자 만족도로 해석하지 않습니다.
+
 ## 아키텍처
 
 ```mermaid
@@ -116,8 +118,10 @@ flowchart LR
 | 독립 PPTX 파싱                         | Python-pptx: 4장, 편집 가능한 텍스트 상자 46개, 발표자 노트 4개; XML well-formed                 |
 | 의존성 검사                            | `npm audit`: 취약점 0개, 검사 시점 2026-08-31                                                    |
 | 평가 재현                              | `npm run eval -- --check` 통과                                                                   |
+| 실제 OpenAI 연동                       | 공개 API·브라우저 검증 통과: 초대 코드 차단, 4장 생성, 저장·편집·PPTX·발표 확인                  |
+| 비밀값 노출 검사                       | Git 관리 파일, 브라우저 번들, 공개 응답에서 현재 API 키·초대 코드의 실제 문자열 미검출           |
 
-로컬 PGlite와 **PostgreSQL 17을 사용하는 GitHub CI에서 전체 검증 절차를 통과**했습니다. [CI 실행 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33349156955)에서 의존성 설치, 정적 검사, 53개 테스트, 평가 재현, 프로덕션 빌드, 17개 브라우저 시나리오 결과를 확인하실 수 있습니다. 공개 Vercel 주소에서도 같은 17개 시나리오를 별도로 실행했습니다. 재현 명령과 배포 중 발견한 문제 및 해결 과정은 [배포·검증 기록](docs/verification.md)에 정리했습니다.
+로컬 PGlite와 **PostgreSQL 17을 사용하는 GitHub CI에서 전체 검증 절차를 통과**했습니다. [CI 실행 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33352548854)에서 의존성 설치, 정적 검사, 53개 테스트, 평가 재현, 프로덕션 빌드, 17개 브라우저 시나리오 결과를 확인하실 수 있습니다. 공개 Vercel 주소에서도 같은 17개 시나리오를 별도로 실행했으며, AI 활성화 후에도 모두 다시 통과했습니다. 재현 명령과 배포 중 발견한 문제 및 해결 과정은 [배포·검증 기록](docs/verification.md)에 정리했습니다.
 
 별도로 새 Vercel 운영 배포 전후에 프레젠테이션의 제목·버전·슬라이드 내용이 그대로 유지되는지도 확인했습니다. [데이터 보존 검증 결과](docs/persistence-verification.json)에는 세션 쿠키나 접속 비밀값을 포함하지 않았습니다.
 
@@ -148,7 +152,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-AI 연동 설정은 `.env.example`의 서버 전용 항목을 참고해 주세요. API 키를 코드·README·채팅에 붙여넣지 마시고, 브라우저에는 실험용 초대 코드만 입력해 주세요. AI 기능은 기본적으로 비활성화되어 있습니다.
+AI 연동 설정은 `.env.example`의 서버 전용 항목을 참고해 주세요. 새로 복제한 프로젝트에서는 기본적으로 비활성화되어 있으며, `OPENAI_API_KEY`, `AI_ACCESS_CODE`, `AI_ENABLED=true`를 서버 환경에 설정해야 동작합니다. 공개 서버리스 배포에는 `DATABASE_URL`도 필요합니다. API 키를 코드·README·채팅에 붙여넣지 마시고, 브라우저에는 실험용 초대 코드만 입력해 주세요. 운영 서비스는 하루 30회의 AI 요청 한도를 적용하며, 실패한 생성 시도도 한도에 포함합니다.
 
 ## 운영 한계와 다음 단계
 
@@ -156,7 +160,7 @@ AI 연동 설정은 `.env.example`의 서버 전용 항목을 참고해 주세�
 - 보관 정책은 7일이며, 만료된 데이터는 다음 작업 공간 생성 시 정리합니다. 외부 DB를 연결하지 않은 Vercel 배포에서는 임시 메모리를 사용하므로 데이터가 초기화될 수 있습니다.
 - 템플릿의 과거 배치 정보를 변경 불가능한 사본으로 보관하는 기능은 아직 없습니다. 현재는 버전 변경을 경고하며, 과거 결과의 완전한 재현은 후속 과제로 남겨두었습니다.
 - 수치·단위·주장 사이의 관계 검증, 실제 글꼴 렌더링 측정, 독립된 평가 데이터, 운영자 사용성 관찰을 다음 검증 대상으로 정했습니다.
-- 대규모 검색 성능, 기업 보안 인증, 실시간 협업, 실제 LLM의 품질·비용, 운영자의 업무 성과는 아직 검증하지 않았습니다.
+- 대규모 검색 성능, 기업 보안 인증, 실시간 협업, 다양한 입력에서의 LLM 품질·장기 운영 비용, 운영자의 업무 성과는 아직 검증하지 않았습니다.
 
 ## AI 활용과 출처
 
