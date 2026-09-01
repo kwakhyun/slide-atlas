@@ -1,6 +1,15 @@
 import { type EvalCase, type Experiment, type SlideTemplate } from "./domain";
 import { rankTemplates } from "./search";
 
+function stableHash(value: string) {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 // Author-written development cases, not a holdout set or evidence of user impact.
 export const EVAL_CASES: EvalCase[] = [
   ...[
@@ -115,16 +124,19 @@ export function evaluateSearch(
   });
   const mean = (items: number[]) =>
     items.reduce((a, b) => a + b, 0) / items.length;
+  const catalogVersion = templates
+    .map((t) => `${t.id}@${t.version}:${t.status}`)
+    .sort()
+    .join("|");
   return {
     id,
     name: "키워드 검색 vs 구조 기반 검색",
     createdAt: new Date().toISOString(),
     durationMs: Math.round((performance.now() - started) * 100) / 100,
     datasetVersion: "atlas-dev-ko-en-v1",
-    catalogVersion: templates
-      .map((t) => `${t.id}@${t.version}:${t.status}`)
-      .sort()
-      .join("|"),
+    catalogVersion,
+    datasetHash: `eval-${stableHash(JSON.stringify(EVAL_CASES))}`,
+    catalogHash: `catalog-${stableHash(catalogVersion)}`,
     size: results.length,
     lexical: {
       hitAt1: mean(results.map((r) => +r.lexicalHit)),

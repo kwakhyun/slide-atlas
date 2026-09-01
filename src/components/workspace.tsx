@@ -28,6 +28,17 @@ import {
 } from "lucide-react";
 import type { WorkspaceState } from "@/lib/domain";
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly code: string,
+    readonly status: number,
+    readonly requestId?: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
 export async function api<T>(
   path: string,
   options: RequestInit = {},
@@ -42,7 +53,12 @@ export async function api<T>(
   });
   const result = await response.json();
   if (!response.ok)
-    throw new Error(result.error?.message ?? "요청을 처리하지 못했습니다.");
+    throw new ApiError(
+      result.error?.message ?? "요청을 처리하지 못했습니다.",
+      result.error?.code ?? "UNKNOWN",
+      response.status,
+      result.error?.requestId,
+    );
   return result.data as T;
 }
 type ContextValue = {
@@ -243,8 +259,11 @@ export function Workspace({ children }: { children: ReactNode }) {
               <div className="topbar-right">
                 <span className="engine-badge">
                   <span className="status-light" />
-                  {state?.aiAvailable ? "AI ready" : "Demo engine"}
+                  {state?.aiAvailable ? "AI 연결됨" : "규칙 기반 데모"}
                 </span>
+                <Link href="/about" className="topbar-link">
+                  <BookOpen size={13} /> 3분 데모
+                </Link>
                 <a
                   href="https://github.com/kwakhyun/slide-atlas"
                   target="_blank"

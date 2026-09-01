@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowDownToLine,
   ArrowRight,
   Check,
+  ChevronLeft,
   ChevronDown,
+  ChevronRight,
   CircleCheck,
   CircleHelp,
   Copy,
@@ -15,21 +18,24 @@ import {
   Layers3,
   Loader2,
   Maximize2,
+  MoreHorizontal,
   MousePointer2,
   Palette,
   Play,
   Plus,
+  Redo2,
   Save,
   ShieldCheck,
   Sparkles,
   TriangleAlert,
+  Trash2,
   Undo2,
   WandSparkles,
   X,
 } from "lucide-react";
-import { api, LoadingWorkspace, useWorkspace } from "./workspace";
+import { ApiError, api, LoadingWorkspace, useWorkspace } from "./workspace";
 import { SlideCanvas } from "./slide-canvas";
-import { PageHeading } from "./ui";
+import { Modal, PageHeading } from "./ui";
 import { EXAMPLE_BRIEF } from "@/lib/catalog";
 import {
   type Deck,
@@ -44,12 +50,13 @@ import { checkSlide } from "@/lib/quality";
 import { mapSourceToTemplate } from "@/lib/generate";
 import { useUnsavedWarning } from "./use-unsaved-warning";
 
-export function Studio() {
+export function Studio({ initialTemplateId }: { initialTemplateId?: string }) {
   const { state, refresh, notify } = useWorkspace();
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Deck | null>(null);
   const [history, setHistory] = useState<Deck[]>([]);
+  const [future, setFuture] = useState<Deck[]>([]);
   const [index, setIndex] = useState(0);
   const [brief, setBrief] = useState(EXAMPLE_BRIEF);
   const [theme, setTheme] = useState<ThemeId>("coral");
@@ -64,6 +71,83 @@ export function Studio() {
   const [qualityOpen, setQualityOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [allThemes, setAllThemes] = useState(false);
+  const [deckMenuOpen, setDeckMenuOpen] = useState(false);
+  const [deckDialog, setDeckDialog] = useState<"rename" | "delete" | null>(
+    null,
+  );
+  const [renameTitle, setRenameTitle] = useState("");
+  const [conflictOpen, setConflictOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<"preview" | "input">("preview");
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [generationStep, setGenerationStep] = useState(0);
+  const appliedTemplate = useRef<string | null>(null);
+  const filmstripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      if (localStorage.getItem("slide-atlas-onboarding-v1") !== "done")
+        setOnboardingOpen(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+  useEffect(() => {
+    if (busy !== "generate") return;
+    const first = window.setTimeout(() => setGenerationStep(1), 450);
+    const second = window.setTimeout(() => setGenerationStep(2), 1300);
+    return () => {
+      window.clearTimeout(first);
+      window.clearTimeout(second);
+    };
+  }, [busy]);
+  useEffect(() => {
+    const active = filmstripRef.current?.querySelector<HTMLElement>(
+      '[aria-pressed="true"]',
+    );
+    active?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [index]);
+  useEffect(() => {
+    if (
+      !state ||
+      !initialTemplateId ||
+      appliedTemplate.current === initialTemplateId
+    )
+      return;
+    const target = state.templates.find(
+      (item) => item.id === initialTemplateId && item.status === "approved",
+    );
+    const base = state.decks[0];
+    if (!target || !base) {
+      notify("선택한 승인 템플릿을 찾을 수 없습니다.", true);
+      return;
+    }
+    const current = base.slides[0];
+    const frame = window.requestAnimationFrame(() => {
+      appliedTemplate.current = initialTemplateId;
+      setSelectedId(base.id);
+      setDraft({
+        ...base,
+        slides: base.slides.map((item, itemIndex) =>
+          itemIndex === 0
+            ? {
+                ...current,
+                templateId: target.id,
+                templateVersion: target.version,
+                values: mapSourceToTemplate(base.brief, target),
+              }
+            : item,
+        ),
+      });
+      setHistory([base]);
+      setFuture([]);
+      setIndex(0);
+      setTab("content");
+      notify(`“${target.name}” 템플릿을 첫 슬라이드에 적용했습니다.`);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [initialTemplateId, notify, state]);
   useUnsavedWarning(!!draft);
   if (!state) return <LoadingWorkspace />;
   const selected =
@@ -79,6 +163,7 @@ export function Studio() {
 
   function update(next: Deck) {
     setHistory((h) => [...h.slice(-19), deck]);
+    setFuture([]);
     setDraft(next);
   }
   function updateSlide(patch: Partial<Slide>) {
@@ -113,9 +198,12 @@ export function Studio() {
       await refresh();
       setDraft(null);
       setHistory([]);
+      setFuture([]);
       notify("내용과 스타일을 저장했습니다.");
       return saved;
     } catch (error) {
+      if (error instanceof ApiError && error.code === "VERSION_CONFLICT")
+        setConflictOpen(true);
       notify((error as Error).message, true);
       throw error;
     } finally {
@@ -127,6 +215,7 @@ export function Studio() {
       notify("편집 중인 슬라이드를 먼저 저장해 주세요.", true);
       return;
     }
+    setGenerationStep(0);
     setBusy("generate");
     try {
       const result = await api<Deck>("/decks", {
@@ -140,6 +229,7 @@ export function Studio() {
       setDraft(null);
       setIndex(0);
       setHistory([]);
+      setFuture([]);
       notify(
         `${result.slides.length}장의 슬라이드를 만들었습니다. 품질 검사를 확인해 주세요.`,
       );
@@ -173,6 +263,105 @@ export function Studio() {
     } finally {
       setBusy(null);
     }
+  }
+  function moveSlide(direction: -1 | 1) {
+    const target = slideIndex + direction;
+    if (target < 0 || target >= deck.slides.length) return;
+    const slides = [...deck.slides];
+    [slides[slideIndex], slides[target]] = [slides[target], slides[slideIndex]];
+    update({ ...deck, slides });
+    setIndex(target);
+  }
+  function removeSlide() {
+    if (deck.slides.length <= 1) return;
+    update({
+      ...deck,
+      slides: deck.slides.filter((_, itemIndex) => itemIndex !== slideIndex),
+    });
+    setIndex(Math.max(0, slideIndex - 1));
+  }
+  function redo() {
+    const next = future.at(-1);
+    if (!next) return;
+    setHistory((items) => [...items.slice(-19), deck]);
+    setDraft(next);
+    setFuture((items) => items.slice(0, -1));
+  }
+  async function duplicateCurrentDeck() {
+    setDeckMenuOpen(false);
+    setBusy("duplicate");
+    try {
+      const copy = await api<Deck>(`/decks/${deck.id}/duplicate`, {
+        method: "POST",
+      });
+      await refresh();
+      setSelectedId(copy.id);
+      setDraft(null);
+      setHistory([]);
+      setFuture([]);
+      setIndex(0);
+      notify("프레젠테이션 복사본을 만들었습니다.");
+    } catch (error) {
+      notify((error as Error).message, true);
+    } finally {
+      setBusy(null);
+    }
+  }
+  async function renameCurrentDeck() {
+    const title = renameTitle.trim();
+    if (!title) return;
+    setBusy("rename");
+    try {
+      const saved = await api<Deck>(`/decks/${deck.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          title,
+          slides: deck.slides,
+          expectedVersion: deck.version,
+        }),
+      });
+      await refresh();
+      setSelectedId(saved.id);
+      setDraft(null);
+      setHistory([]);
+      setFuture([]);
+      setDeckDialog(null);
+      notify("프레젠테이션 이름을 변경했습니다.");
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "VERSION_CONFLICT")
+        setConflictOpen(true);
+      notify((error as Error).message, true);
+    } finally {
+      setBusy(null);
+    }
+  }
+  async function deleteCurrentDeck() {
+    setBusy("delete");
+    try {
+      await api(`/decks/${deck.id}`, { method: "DELETE" });
+      const next = await refresh();
+      setSelectedId(next.decks[0]?.id ?? null);
+      setDraft(null);
+      setHistory([]);
+      setFuture([]);
+      setIndex(0);
+      setDeckDialog(null);
+      notify("프레젠테이션을 삭제했습니다.");
+    } catch (error) {
+      notify((error as Error).message, true);
+    } finally {
+      setBusy(null);
+    }
+  }
+  function downloadRecoveryDraft() {
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(deck, null, 2)], { type: "application/json" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `slide-atlas-recovery-${deck.id}.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   return (
@@ -237,6 +426,50 @@ export function Studio() {
           </>
         }
       />
+      {onboardingOpen && (
+        <section className="onboarding-card" aria-label="3분 데모 안내">
+          <div>
+            <span className="mini-label">처음 오셨나요?</span>
+            <h2>세 단계로 핵심 흐름을 확인해 보세요.</h2>
+            <p>
+              예시 생성부터 구조 교체와 검색 실험까지 약 3분이면 충분합니다.
+            </p>
+          </div>
+          <ol>
+            <li>
+              <strong>1</strong>
+              <button
+                onClick={() => {
+                  setBrief(EXAMPLE_BRIEF);
+                  setTab("brief");
+                  setMobileView("input");
+                  document.getElementById("brief")?.focus();
+                }}
+              >
+                예시로 생성하기
+              </button>
+            </li>
+            <li>
+              <strong>2</strong>
+              <Link href="/library">승인 템플릿 고르기</Link>
+            </li>
+            <li>
+              <strong>3</strong>
+              <Link href="/experiments">검색 실험 확인하기</Link>
+            </li>
+          </ol>
+          <button
+            className="icon-btn onboarding-close"
+            aria-label="3분 데모 안내 닫기"
+            onClick={() => {
+              localStorage.setItem("slide-atlas-onboarding-v1", "done");
+              setOnboardingOpen(false);
+            }}
+          >
+            <X size={16} />
+          </button>
+        </section>
+      )}
       <div className="project-strip">
         <div>
           <span className="project-icon">
@@ -254,6 +487,7 @@ export function Studio() {
               setIndex(0);
               setDraft(null);
               setHistory([]);
+              setFuture([]);
             }}
           >
             {state.decks.map((d) => (
@@ -262,25 +496,117 @@ export function Studio() {
               </option>
             ))}
           </select>
-          <span className="soft-tag">{deck.slides.length} SLIDES</span>
+          <span className="soft-tag">슬라이드 {deck.slides.length}장</span>
         </div>
         <div className="project-save">
           <span className={dirty ? "unsaved" : "saved"}>
             {dirty ? <span className="tiny-dot" /> : <Check size={13} />}
-            {dirty ? "저장하지 않은 변경사항" : "모든 변경사항 저장됨"}
+            {dirty
+              ? "저장하지 않은 변경사항"
+              : `마지막 저장 ${new Date(deck.updatedAt).toLocaleTimeString(
+                  "ko-KR",
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  },
+                )}`}
           </span>
           <button
-            className="icon-btn"
+            className="btn small save-action"
             title="변경사항 저장"
             aria-label="변경사항 저장"
             disabled={!dirty || !!busy}
             onClick={() => void save().catch(() => {})}
           >
             <Save size={16} />
+            {busy === "save" ? "저장 중" : "저장"}
           </button>
+          <div className="deck-menu-wrap">
+            <button
+              className="icon-btn"
+              aria-label="프레젠테이션 관리"
+              aria-expanded={deckMenuOpen}
+              onClick={() => setDeckMenuOpen((open) => !open)}
+            >
+              <MoreHorizontal size={17} />
+            </button>
+            {deckMenuOpen && (
+              <div className="deck-menu">
+                <button
+                  onClick={() => {
+                    setRenameTitle(deck.title);
+                    setDeckDialog("rename");
+                    setDeckMenuOpen(false);
+                  }}
+                >
+                  이름 변경
+                </button>
+                <button
+                  disabled={dirty || !!busy}
+                  onClick={() => void duplicateCurrentDeck()}
+                >
+                  복제
+                </button>
+                <button
+                  className="danger-text"
+                  disabled={dirty || state.decks.length <= 1 || !!busy}
+                  onClick={() => {
+                    setDeckDialog("delete");
+                    setDeckMenuOpen(false);
+                  }}
+                >
+                  삭제
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      <div className="studio-grid">
+      {deck.generation && (
+        <details className="ai-evidence">
+          <summary>
+            AI 생성 근거
+            <span>
+              {deck.generation.model} ·{" "}
+              {deck.generation.durationMs.toLocaleString()}ms
+            </span>
+          </summary>
+          <div>
+            <span>프롬프트 {deck.generation.promptVersion}</span>
+            <span>
+              토큰 {deck.generation.inputTokens.toLocaleString()} 입력 ·{" "}
+              {deck.generation.outputTokens.toLocaleString()} 출력
+            </span>
+            {state.aiUsage && (
+              <span>
+                오늘 남은 요청 {state.aiUsage.remaining}/{state.aiUsage.limit}
+              </span>
+            )}
+          </div>
+        </details>
+      )}
+      <div
+        className="mobile-studio-switcher"
+        role="group"
+        aria-label="모바일 편집 화면"
+      >
+        <button
+          className={mobileView === "preview" ? "active" : ""}
+          aria-pressed={mobileView === "preview"}
+          onClick={() => setMobileView("preview")}
+        >
+          미리보기
+        </button>
+        <button
+          className={mobileView === "input" ? "active" : ""}
+          aria-pressed={mobileView === "input"}
+          onClick={() => setMobileView("input")}
+        >
+          내용 입력
+        </button>
+      </div>
+      <div className={`studio-grid mobile-${mobileView}`}>
         <section className="input-panel" aria-label="브리프와 내용 편집">
           <div className="panel-tabs" role="tablist" aria-label="입력 방식">
             <button
@@ -391,6 +717,13 @@ export function Studio() {
                   />
                   <p className="field-hint">
                     원문이 OpenAI에 전달되며 사용량 비용이 발생합니다.
+                    {state.aiUsage && (
+                      <>
+                        <br />
+                        오늘 남은 요청은 {state.aiUsage.remaining}/
+                        {state.aiUsage.limit}회입니다.
+                      </>
+                    )}
                   </p>
                 </div>
               )}
@@ -466,14 +799,10 @@ export function Studio() {
                   </span>
                 </div>
               ))}
-              <button
-                className="btn primary full"
-                disabled={!dirty || !!busy}
-                onClick={() => void save().catch(() => {})}
-              >
-                <Save size={16} />
-                변경사항 저장
-              </button>
+              <p className="content-save-note">
+                변경 내용은 미리보기에 즉시 반영됩니다. 저장은 상단 버튼에서 한
+                번만 진행합니다.
+              </p>
             </div>
           )}
         </section>
@@ -481,7 +810,7 @@ export function Studio() {
           <div className="stage-toolbar">
             <div className="stage-title">
               <span className="live-dot" />
-              LIVE PREVIEW<span className="stage-ratio">16:9</span>
+              실시간 미리보기<span className="stage-ratio">16:9</span>
             </div>
             <div>
               <button
@@ -499,11 +828,41 @@ export function Studio() {
                 aria-label="되돌리기"
                 disabled={!history.length}
                 onClick={() => {
-                  setDraft(history[history.length - 1]);
-                  setHistory((h) => h.slice(0, -1));
+                  const previous = history.at(-1);
+                  if (!previous) return;
+                  setFuture((items) => [...items.slice(-19), deck]);
+                  setDraft(previous);
+                  setHistory((items) => items.slice(0, -1));
                 }}
               >
                 <Undo2 size={17} />
+              </button>
+              <button
+                className="icon-btn"
+                title="다시 실행"
+                aria-label="다시 실행"
+                disabled={!future.length}
+                onClick={redo}
+              >
+                <Redo2 size={17} />
+              </button>
+              <button
+                className="icon-btn"
+                title="슬라이드를 앞으로 이동"
+                aria-label="슬라이드를 앞으로 이동"
+                disabled={slideIndex === 0}
+                onClick={() => moveSlide(-1)}
+              >
+                <ChevronLeft size={17} />
+              </button>
+              <button
+                className="icon-btn"
+                title="슬라이드를 뒤로 이동"
+                aria-label="슬라이드를 뒤로 이동"
+                disabled={slideIndex === deck.slides.length - 1}
+                onClick={() => moveSlide(1)}
+              >
+                <ChevronRight size={17} />
               </button>
               <button
                 className="icon-btn"
@@ -528,6 +887,15 @@ export function Studio() {
                 <Copy size={16} />
               </button>
               <button
+                className="icon-btn danger-icon"
+                title="슬라이드 삭제"
+                aria-label="슬라이드 삭제"
+                disabled={deck.slides.length <= 1}
+                onClick={removeSlide}
+              >
+                <Trash2 size={16} />
+              </button>
+              <button
                 className="icon-btn"
                 title="발표 화면"
                 aria-label="발표 화면"
@@ -542,7 +910,28 @@ export function Studio() {
               </button>
             </div>
           </div>
-          <div className="slide-mat">
+          {busy === "generate" && (
+            <div
+              className="generation-progress"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2 className="spin" size={17} />
+              <div>
+                <strong>
+                  {generationStep === 0
+                    ? "승인 구조를 찾고 있습니다."
+                    : generationStep === 1
+                      ? "내용을 슬롯에 배치하고 있습니다."
+                      : "자동 품질 검사를 진행하고 있습니다."}
+                </strong>
+                <span>구조 검색 → 슬롯 배치 → 품질 검사</span>
+              </div>
+            </div>
+          )}
+          <div
+            className={`slide-mat ${busy === "generate" ? "is-generating" : ""}`}
+          >
             <div className="slide-paper">
               <SlideCanvas
                 slide={slide}
@@ -566,7 +955,9 @@ export function Studio() {
                 ) : (
                   <ShieldCheck size={13} />
                 )}
-                품질 {quality.score}
+                자동 검사{" "}
+                {quality.checks.filter((item) => item.status === "pass").length}
+                /{quality.checks.length}
                 <ChevronDown size={12} />
               </button>
             </div>
@@ -608,7 +999,15 @@ export function Studio() {
           {qualityOpen && (
             <div className="quality-panel">
               <div className="section-label">
-                <span>RULE-BASED QUALITY CHECK</span>
+                <span>규칙 기반 자동 검사</span>
+                <strong>
+                  통과{" "}
+                  {
+                    quality.checks.filter((item) => item.status === "pass")
+                      .length
+                  }{" "}
+                  · 오류 {quality.errors} · 경고 {quality.warnings}
+                </strong>
                 <button
                   className="icon-btn"
                   aria-label="품질 검사 닫기"
@@ -635,7 +1034,7 @@ export function Studio() {
               </p>
             </div>
           )}
-          <div className="filmstrip">
+          <div className="filmstrip" ref={filmstripRef}>
             {deck.slides.map((item, i) => {
               const t = state.templates.find((t) => t.id === item.templateId)!;
               return (
@@ -690,7 +1089,7 @@ export function Studio() {
           <Layers3 size={19} />
         </div>
         <div>
-          <span className="mini-label">DESIGNED WITH STRUCTURE</span>
+          <span className="mini-label">구조 정보</span>
           <strong>
             {template.name} <span>v{template.version}</span>
           </strong>
@@ -733,6 +1132,108 @@ export function Studio() {
           생성 후 내용과 넘침을 확인해 주세요.
         </span>
       </div>
+      {deckDialog === "rename" && (
+        <Modal
+          title="프레젠테이션 이름 변경"
+          subtitle="목록과 발표 화면에 표시할 이름을 입력해 주세요."
+          onClose={() => setDeckDialog(null)}
+        >
+          <form
+            className="modal-body compact-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void renameCurrentDeck();
+            }}
+          >
+            <label className="field-label" htmlFor="deck-title">
+              프레젠테이션 이름
+            </label>
+            <input
+              id="deck-title"
+              value={renameTitle}
+              onChange={(event) => setRenameTitle(event.target.value)}
+              minLength={1}
+              maxLength={80}
+              autoFocus
+              required
+            />
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setDeckDialog(null)}
+              >
+                취소
+              </button>
+              <button
+                className="btn dark"
+                disabled={!!busy || !renameTitle.trim()}
+              >
+                이름 저장
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+      {deckDialog === "delete" && (
+        <Modal
+          title="프레젠테이션 삭제"
+          subtitle="이 작업은 되돌릴 수 없습니다."
+          onClose={() => setDeckDialog(null)}
+        >
+          <div className="modal-body confirm-copy">
+            <p>
+              “{deck.title}”과 포함된 슬라이드 {deck.slides.length}장을
+              삭제합니다.
+            </p>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setDeckDialog(null)}>
+                취소
+              </button>
+              <button
+                className="btn danger"
+                disabled={!!busy}
+                onClick={() => void deleteCurrentDeck()}
+              >
+                삭제하기
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {conflictOpen && (
+        <Modal
+          title="새 버전이 저장되어 있습니다"
+          subtitle="현재 편집 내용은 유지하고 있습니다. 먼저 안전하게 보관해 주세요."
+          onClose={() => setConflictOpen(false)}
+        >
+          <div className="modal-body confirm-copy">
+            <p>
+              다른 작업에서 같은 프레젠테이션을 먼저 저장했습니다. 내 변경을
+              JSON으로 내려받거나 서버의 최신 버전을 불러올 수 있습니다.
+            </p>
+            <div className="modal-actions">
+              <button className="btn" onClick={downloadRecoveryDraft}>
+                내 변경 JSON 내려받기
+              </button>
+              <button
+                className="btn dark"
+                onClick={() => {
+                  void refresh().then(() => {
+                    setDraft(null);
+                    setHistory([]);
+                    setFuture([]);
+                    setConflictOpen(false);
+                    notify("서버의 최신 버전을 불러왔습니다.");
+                  });
+                }}
+              >
+                최신 버전 불러오기
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

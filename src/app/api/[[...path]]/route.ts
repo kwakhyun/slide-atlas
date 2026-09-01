@@ -100,7 +100,9 @@ async function handle(
     const routeExists =
       req.method === "GET"
         ? (["health", "workspace"].includes(resource) && path.length === 1) ||
-          (resource === "templates" && path.length <= 2) ||
+          (resource === "templates" &&
+            (path.length <= 2 ||
+              (path.length === 3 && action === "versions"))) ||
           (resource === "decks" &&
             (path.length === 2 || (path.length === 3 && action === "export")))
         : req.method === "POST"
@@ -108,8 +110,15 @@ async function handle(
               path.length === 1) ||
             (resource === "templates" &&
               path.length === 3 &&
-              action === "review")
-          : ["templates", "decks"].includes(resource) && path.length === 2;
+              action === "review") ||
+            (resource === "decks" &&
+              path.length === 3 &&
+              action === "duplicate")
+          : req.method === "PATCH"
+            ? ["templates", "decks"].includes(resource) && path.length === 2
+            : req.method === "DELETE"
+              ? resource === "decks" && path.length === 2
+              : false;
     invariant(routeExists, 404, "NOT_FOUND", "요청한 API를 찾을 수 없습니다.");
     const db = await getDatabase();
     let response: NextResponse;
@@ -134,7 +143,10 @@ async function handle(
       if (resource === "workspace" && req.method === "GET")
         response = json(await repo.getWorkspaceState(db, workspaceId));
       else if (resource === "templates" && req.method === "GET") {
-        if (id) response = json(await repo.getTemplate(db, workspaceId, id));
+        if (id && action === "versions")
+          response = json(await repo.listTemplateVersions(db, workspaceId, id));
+        else if (id)
+          response = json(await repo.getTemplate(db, workspaceId, id));
         else {
           const query = z
             .object({
@@ -198,6 +210,13 @@ async function handle(
             input.expectedVersion,
           ),
         );
+      } else if (
+        resource === "decks" &&
+        id &&
+        action === "duplicate" &&
+        req.method === "POST"
+      ) {
+        response = json(await repo.duplicateDeck(db, workspaceId, id), 201);
       } else if (resource === "decks" && !id && req.method === "POST") {
         await repo.rateLimit(db, workspaceId, "generate", 8);
         const input = generationInputSchema.parse(await readJson(req));
@@ -238,6 +257,8 @@ async function handle(
             input.expectedVersion,
           ),
         );
+      } else if (resource === "decks" && id && req.method === "DELETE") {
+        response = json(await repo.deleteDeck(db, workspaceId, id));
       } else if (resource === "decks" && id && req.method === "GET") {
         const deck = await repo.getDeck(db, workspaceId, id);
         if (action === "export") {
@@ -381,4 +402,4 @@ async function handle(
     return response;
   }
 }
-export { handle as GET, handle as POST, handle as PATCH };
+export { handle as GET, handle as POST, handle as PATCH, handle as DELETE };

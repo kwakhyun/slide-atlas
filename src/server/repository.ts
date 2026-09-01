@@ -9,6 +9,7 @@ import {
   type SlideTemplate,
   type TemplateInput,
   type TemplateStatus,
+  type TemplateVersionSnapshot,
   type Deck,
   type Experiment,
   type AuditEvent,
@@ -17,7 +18,7 @@ import {
 import type { Database, DbSession } from "./database";
 import { invariant } from "./errors";
 import { checkSlide } from "@/lib/quality";
-import { isAiConfigured } from "./ai";
+import { getAiUsage, isAiConfigured } from "./ai";
 
 const hash = (token: string) =>
   createHash("sha256").update(token).digest("hex");
@@ -40,6 +41,16 @@ export async function appendEvent(
     [randomUUID(), workspaceId, entityType, entityId, action, detail],
   );
 }
+async function writeTemplateSnapshot(
+  tx: DbSession,
+  workspaceId: string,
+  template: SlideTemplate,
+) {
+  await tx.query(
+    "INSERT INTO template_versions(workspace_id,template_id,version,data) VALUES($1,$2,$3,$4::text::jsonb) ON CONFLICT(workspace_id,template_id,version) DO NOTHING",
+    [workspaceId, template.id, template.version, JSON.stringify(template)],
+  );
+}
 export async function createWorkspace(
   db: Database,
   token = randomBytes(32).toString("base64url"),
@@ -50,7 +61,7 @@ export async function createWorkspace(
       workspaceId,
       hash(token),
     ]);
-    for (const t of SEED_TEMPLATES)
+    for (const t of SEED_TEMPLATES) {
       await tx.query(
         "INSERT INTO templates (workspace_id,id,name,intent,layout,status,version,search_text,data) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::text::jsonb)",
         [
@@ -65,6 +76,8 @@ export async function createWorkspace(
           JSON.stringify(t),
         ],
       );
+      await writeTemplateSnapshot(tx, workspaceId, t);
+    }
     const now = new Date().toISOString();
     const deck: Deck = {
       id: "sample-deck",
@@ -160,6 +173,28 @@ export async function getTemplate(
   invariant(rows[0], 404, "NOT_FOUND", "템플릿을 찾을 수 없습니다.");
   return rows[0].data;
 }
+export async function listTemplateVersions(
+  db: DbSession,
+  workspaceId: string,
+  templateId: string,
+): Promise<TemplateVersionSnapshot[]> {
+  await getTemplate(db, workspaceId, templateId);
+  const { rows } = await db.query<{
+    template_id: string;
+    version: number;
+    data: SlideTemplate;
+    created_at: Date | string;
+  }>(
+    "SELECT template_id,version,data,created_at FROM template_versions WHERE workspace_id=$1 AND template_id=$2 ORDER BY version DESC LIMIT 20",
+    [workspaceId, templateId],
+  );
+  return rows.map((row) => ({
+    templateId: row.template_id,
+    version: row.version,
+    data: row.data,
+    createdAt: new Date(row.created_at).toISOString(),
+  }));
+}
 async function writeTemplate(
   tx: DbSession,
   workspaceId: string,
@@ -218,6 +253,7 @@ export async function insertTemplate(
         JSON.stringify(t),
       ],
     );
+    await writeTemplateSnapshot(tx, workspaceId, t);
     await appendEvent(
       tx,
       workspaceId,
@@ -252,7 +288,9 @@ export async function updateTemplate(
       status: "draft",
       updatedAt: new Date().toISOString(),
     };
+    await writeTemplateSnapshot(tx, workspaceId, current);
     await writeTemplate(tx, workspaceId, next);
+    await writeTemplateSnapshot(tx, workspaceId, next);
     await appendEvent(
       tx,
       workspaceId,
@@ -324,7 +362,9 @@ export async function reviewTemplate(
       version: current.version + 1,
       updatedAt: new Date().toISOString(),
     };
+    await writeTemplateSnapshot(tx, workspaceId, current);
     await writeTemplate(tx, workspaceId, next);
+    await writeTemplateSnapshot(tx, workspaceId, next);
     await appendEvent(
       tx,
       workspaceId,
@@ -426,6 +466,84 @@ export async function updateDeck(
     return next;
   });
 }
+export async function duplicateDeck(
+  db: Database,
+  workspaceId: string,
+  id: string,
+): Promise<Deck> {
+  return db.transaction(async (tx) => {
+    const current = await getDeck(tx, workspaceId, id);
+    const count = await tx.query<{ count: string }>(
+      "SELECT count(*)::text AS count FROM decks WHERE workspace_id=$1",
+      [workspaceId],
+    );
+    invariant(
+      Number(count.rows[0].count) < 50,
+      422,
+      "LIMIT",
+      "데모에서는 프레젠테이션을 50개까지 저장할 수 있습니다.",
+    );
+    const now = new Date().toISOString();
+    const next: Deck = {
+      ...current,
+      id: randomUUID(),
+      title: `${current.title.slice(0, 74)} 복사본`,
+      slides: current.slides.map((slide) => ({
+        ...slide,
+        id: randomUUID(),
+        values: { ...slide.values },
+      })),
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await tx.query(
+      "INSERT INTO decks(workspace_id,id,version,data) VALUES($1,$2,$3,$4::text::jsonb)",
+      [workspaceId, next.id, next.version, JSON.stringify(next)],
+    );
+    await appendEvent(
+      tx,
+      workspaceId,
+      "deck",
+      next.id,
+      "deck.duplicated",
+      `“${current.title}”을 “${next.title}”으로 복제`,
+    );
+    return next;
+  });
+}
+export async function deleteDeck(
+  db: Database,
+  workspaceId: string,
+  id: string,
+) {
+  return db.transaction(async (tx) => {
+    const current = await getDeck(tx, workspaceId, id, true);
+    const count = await tx.query<{ count: string }>(
+      "SELECT count(*)::text AS count FROM decks WHERE workspace_id=$1",
+      [workspaceId],
+    );
+    invariant(
+      Number(count.rows[0].count) > 1,
+      422,
+      "LAST_DECK",
+      "마지막 프레젠테이션은 삭제할 수 없습니다.",
+    );
+    await tx.query("DELETE FROM decks WHERE workspace_id=$1 AND id=$2", [
+      workspaceId,
+      id,
+    ]);
+    await appendEvent(
+      tx,
+      workspaceId,
+      "deck",
+      id,
+      "deck.deleted",
+      `“${current.title}” 삭제`,
+    );
+    return { id };
+  });
+}
 export async function insertExperiment(
   db: Database,
   workspaceId: string,
@@ -454,7 +572,8 @@ export async function getWorkspaceState(
   db: Database,
   workspaceId: string,
 ): Promise<WorkspaceState> {
-  const [templates, decks, events, experiments] = await Promise.all([
+  const aiAvailable = isAiConfigured();
+  const [templates, decks, events, experiments, aiUsage] = await Promise.all([
     listTemplates(db, workspaceId),
     db.query<{ data: Deck }>(
       "SELECT data FROM decks WHERE workspace_id=$1 ORDER BY updated_at DESC LIMIT 50",
@@ -475,6 +594,7 @@ export async function getWorkspaceState(
       "SELECT data FROM experiments WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 20",
       [workspaceId],
     ),
+    aiAvailable ? getAiUsage(db) : Promise.resolve(undefined),
   ]);
   return {
     templates,
@@ -489,6 +609,7 @@ export async function getWorkspaceState(
     })),
     experiments: experiments.rows.map((r) => r.data),
     storage: db.mode,
-    aiAvailable: isAiConfigured(),
+    aiAvailable,
+    aiUsage,
   };
 }

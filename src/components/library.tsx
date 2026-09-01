@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import {
   ArrowRight,
   Braces,
@@ -40,12 +41,15 @@ import {
 } from "@/lib/domain";
 import { SEED_TEMPLATES, layoutSlots } from "@/lib/catalog";
 
-export function Library() {
+export function Library({ initialIntent }: { initialIntent?: Intent }) {
   const { state, notify } = useWorkspace();
   const [q, setQ] = useState("");
-  const [intent, setIntent] = useState<Intent | "">("");
+  const [intent, setIntent] = useState<Intent | "">(initialIntent ?? "");
   const [status, setStatus] = useState<TemplateStatus | "">("");
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [sort, setSort] = useState<"relevance" | "updated" | "name">(
+    initialIntent ? "relevance" : "updated",
+  );
   const [matches, setMatches] = useState<SearchMatch[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -87,7 +91,16 @@ export function Library() {
       reasons: [],
       breakdown: { lexical: 0, intent: 0, structure: 0, capacity: 0 },
     }))
-  ).filter((m) => !intent || m.template.intent === intent);
+  )
+    .filter((m) => !intent || m.template.intent === intent)
+    .slice()
+    .sort((a, b) => {
+      if (sort === "name")
+        return a.template.name.localeCompare(b.template.name, "ko");
+      if (sort === "updated")
+        return b.template.updatedAt.localeCompare(a.template.updatedAt);
+      return b.score - a.score || a.template.id.localeCompare(b.template.id);
+    });
   const selected = state.templates.find((t) => t.id === selectedId);
   const approved = state.templates.filter(
     (t) => t.status === "approved",
@@ -134,7 +147,7 @@ export function Library() {
             전달 의도
             <strong>
               {INTENTS.length}
-              <small>ONTOLOGY TYPES</small>
+              <small>의도 유형</small>
             </strong>
           </span>
         </div>
@@ -186,6 +199,20 @@ export function Library() {
                 {statusLabels[s]}
               </option>
             ))}
+          </select>
+        </div>
+        <div className="status-filter">
+          <label className="sr-only" htmlFor="sort-filter">
+            정렬 기준
+          </label>
+          <select
+            id="sort-filter"
+            value={sort}
+            onChange={(event) => setSort(event.target.value as typeof sort)}
+          >
+            <option value="relevance">관련도순</option>
+            <option value="updated">최근 수정순</option>
+            <option value="name">이름순</option>
           </select>
         </div>
         <div className="view-toggle">
@@ -267,7 +294,7 @@ export function Library() {
           className={view === "grid" ? "template-grid" : "template-list"}
           aria-busy={searching}
         >
-          {filtered.map(({ template: t, score, reasons }) => (
+          {filtered.map(({ template: t, score, reasons, breakdown }) => (
             <button
               key={t.id}
               className="template-card"
@@ -287,7 +314,14 @@ export function Library() {
                 />
                 <div className="template-preview-top">
                   <span>{layoutLabels[t.layout]}</span>
-                  {q && <span className="match-score">MATCH {score}</span>}
+                  {q && (
+                    <span
+                      className="match-score"
+                      title={`키워드 ${breakdown.lexical} · 의도 ${breakdown.intent} · 구조 ${breakdown.structure} · 용량 ${breakdown.capacity}`}
+                    >
+                      관련도 {score}
+                    </span>
+                  )}
                 </div>
                 <span className="preview-open">
                   <ArrowRight size={16} />
@@ -301,7 +335,7 @@ export function Library() {
                 <p>
                   {intentLabels[t.intent]}
                   <span>·</span>
-                  {t.slots.length} slots<span>·</span>v{t.version}
+                  슬롯 {t.slots.length}개<span>·</span>v{t.version}
                 </p>
                 <div className="template-tags">
                   {t.tags.slice(0, 3).map((tag) => (
@@ -311,6 +345,10 @@ export function Library() {
                 {q && (
                   <div className="match-reasons">
                     {reasons.slice(0, 2).join(" · ") || "텍스트 유사도 비교"}
+                    <span>
+                      키워드 {breakdown.lexical} · 의도 {breakdown.intent} ·
+                      구조 {breakdown.structure} · 용량 {breakdown.capacity}
+                    </span>
                   </div>
                 )}
               </div>
@@ -375,6 +413,8 @@ function TemplateDetails({
   const [tab, setTab] = useState<"schema" | "json">("schema");
   const [guides, setGuides] = useState(true);
   const { notify } = useWorkspace();
+  const densityLabel =
+    t.density === "low" ? "낮음" : t.density === "high" ? "높음" : "보통";
   return (
     <Modal
       title={t.name}
@@ -415,7 +455,7 @@ function TemplateDetails({
             </div>
             <div>
               <span>정보 밀도</span>
-              <strong>{t.density}</strong>
+              <strong>{densityLabel}</strong>
             </div>
             <div>
               <span>버전·상태</span>
@@ -445,8 +485,8 @@ function TemplateDetails({
           {tab === "schema" ? (
             <div className="slot-table">
               <div className="slot-table-head">
-                <span>SLOT / ROLE</span>
-                <span>CAPACITY</span>
+                <span>슬롯 / 역할</span>
+                <span>글자 수</span>
               </div>
               {t.slots.map((s) => (
                 <div className="slot-table-row" key={s.key}>
@@ -491,6 +531,11 @@ function TemplateDetails({
       </div>
       <div className="modal-actions">
         <span className="modal-action-note">수정 시 재검수가 필요합니다.</span>
+        {t.status === "approved" && (
+          <Link className="btn green" href={`/studio?template=${t.id}`}>
+            <ArrowRight size={14} />이 템플릿으로 만들기
+          </Link>
+        )}
         <button className="btn" onClick={onCopy}>
           <Copy size={14} />
           복제하여 등록

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -24,6 +24,7 @@ import { SlideCanvas } from "./slide-canvas";
 import { TemplateForm } from "./library";
 import {
   type SlideTemplate,
+  type TemplateVersionSnapshot,
   type TemplateStatus,
   templateInputSchema,
   intentLabels,
@@ -45,9 +46,26 @@ export function Review() {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<SlideTemplate | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
-  if (!state) return <LoadingWorkspace />;
-  const items = state.templates.filter((t) => t.status === status);
+  const [versionData, setVersionData] = useState<{
+    templateId: string;
+    version: number;
+    snapshots: TemplateVersionSnapshot[];
+  } | null>(null);
+  const items = state?.templates.filter((t) => t.status === status) ?? [];
   const template = items.find((t) => t.id === selectedId) ?? items[0];
+  const templateId = template?.id;
+  const templateVersion = template?.version;
+  const snapshots =
+    versionData !== null &&
+    versionData.templateId === templateId &&
+    versionData.version === templateVersion
+      ? versionData.snapshots
+      : [];
+  const versionsLoading = Boolean(
+    template &&
+    (versionData?.templateId !== templateId ||
+      versionData.version !== templateVersion),
+  );
   const validation = template ? templateInputSchema.safeParse(template) : null;
   const quality = template
     ? checkSlide(
@@ -62,9 +80,27 @@ export function Review() {
         Object.values(template.sampleContent).join(" "),
       )
     : null;
-  const templateEvents = state.events.filter(
-    (e) => e.entityType === "template",
-  );
+  const templateEvents =
+    state?.events.filter((e) => e.entityType === "template") ?? [];
+  useEffect(() => {
+    if (!templateId || templateVersion === undefined) return;
+    const controller = new AbortController();
+    void api<TemplateVersionSnapshot[]>(`/templates/${templateId}/versions`, {
+      signal: controller.signal,
+    })
+      .then((nextSnapshots) =>
+        setVersionData({
+          templateId,
+          version: templateVersion,
+          snapshots: nextSnapshots,
+        }),
+      )
+      .catch((error) => {
+        if (!controller.signal.aborted) notify((error as Error).message, true);
+      });
+    return () => controller.abort();
+  }, [notify, templateId, templateVersion]);
+  if (!state) return <LoadingWorkspace />;
   async function transition(next: TemplateStatus) {
     if (!template) return;
     setBusy(true);
@@ -149,7 +185,7 @@ export function Review() {
           <section className="review-queue" aria-label="검수 목록">
             <div className="queue-label">
               <Inbox size={14} />
-              <span>REVIEW QUEUE</span>
+              <span>검수 목록</span>
               <span>{items.length}</span>
             </div>
             {items.map((t) => (
@@ -190,8 +226,8 @@ export function Review() {
                 <h2>{template.name}</h2>
                 <p>
                   {intentLabels[template.intent]} <span>·</span>{" "}
-                  {layoutLabels[template.layout]} <span>·</span>{" "}
-                  {template.slots.length} slots
+                  {layoutLabels[template.layout]} <span>·</span> 슬롯{" "}
+                  {template.slots.length}개
                 </p>
               </div>
               <button
@@ -202,6 +238,11 @@ export function Review() {
                 수정
               </button>
             </div>
+            <TemplateVersionDiff
+              current={template}
+              snapshots={snapshots}
+              loading={versionsLoading}
+            />
             <div className="review-detail-body">
               <div className="review-preview">
                 <SlideCanvas
@@ -222,7 +263,7 @@ export function Review() {
               </div>
               <div className="review-checklist">
                 <div className="section-label">
-                  <span>PRE-FLIGHT CHECK</span>
+                  <span>승인 전 자동 검사</span>
                   <span>
                     {validation?.success ? "스키마 정상" : "스키마 오류"}
                   </span>
@@ -277,6 +318,17 @@ export function Review() {
                       : "어떤 내용을 확인받고 싶은지 남겨 주세요."
                   }
                 />
+                <div className="approval-requirements" aria-label="승인 조건">
+                  <span className={note.trim().length >= 5 ? "met" : ""}>
+                    <Check size={12} /> 검수 근거 5자 이상
+                  </span>
+                  <span className={validation?.success ? "met" : ""}>
+                    <Check size={12} /> 스키마 정상
+                  </span>
+                  <span className={quality.errors === 0 ? "met" : ""}>
+                    <Check size={12} /> 자동 검사 오류 0개
+                  </span>
+                </div>
                 <div className="review-decision-actions">
                   <span>
                     <Clock3 size={12} />v{template.version} 기준으로 검수합니다
@@ -399,5 +451,134 @@ export function Review() {
         </Modal>
       )}
     </div>
+  );
+}
+
+function templateContentSignature(template: SlideTemplate) {
+  return JSON.stringify({
+    name: template.name,
+    description: template.description,
+    intent: template.intent,
+    layout: template.layout,
+    density: template.density,
+    tags: template.tags,
+    slots: template.slots,
+    defaultTheme: template.defaultTheme,
+    sampleContent: template.sampleContent,
+  });
+}
+
+function TemplateVersionDiff({
+  current,
+  snapshots,
+  loading,
+}: {
+  current: SlideTemplate;
+  snapshots: TemplateVersionSnapshot[];
+  loading: boolean;
+}) {
+  const signature = templateContentSignature(current);
+  const previous = snapshots.find(
+    (snapshot) =>
+      snapshot.version < current.version &&
+      templateContentSignature(snapshot.data) !== signature,
+  );
+  if (loading)
+    return (
+      <div className="version-diff loading" role="status">
+        <Loader2 className="spin" size={15} /> 이전 버전과 변경점을 확인하고
+        있습니다.
+      </div>
+    );
+  if (!previous)
+    return (
+      <div className="version-diff empty">
+        <History size={15} /> 비교할 이전 내용 버전이 없습니다. 현재 상태가 최초
+        등록 기준입니다.
+      </div>
+    );
+  const before = previous.data;
+  const changes: string[] = [];
+  if (before.name !== current.name)
+    changes.push(`이름: ${before.name} → ${current.name}`);
+  if (before.intent !== current.intent)
+    changes.push(
+      `전달 의도: ${intentLabels[before.intent]} → ${intentLabels[current.intent]}`,
+    );
+  if (before.layout !== current.layout)
+    changes.push(
+      `레이아웃: ${layoutLabels[before.layout]} → ${layoutLabels[current.layout]}`,
+    );
+  if (before.defaultTheme !== current.defaultTheme)
+    changes.push(`기본 테마: ${before.defaultTheme} → ${current.defaultTheme}`);
+  const beforeSlots = new Map(before.slots.map((slot) => [slot.key, slot]));
+  const currentSlots = new Map(current.slots.map((slot) => [slot.key, slot]));
+  for (const key of new Set([...beforeSlots.keys(), ...currentSlots.keys()])) {
+    const oldSlot = beforeSlots.get(key);
+    const nextSlot = currentSlots.get(key);
+    if (!oldSlot) changes.push(`슬롯 추가: ${nextSlot?.label ?? key}`);
+    else if (!nextSlot) changes.push(`슬롯 삭제: ${oldSlot.label}`);
+    else if (JSON.stringify(oldSlot) !== JSON.stringify(nextSlot))
+      changes.push(
+        `${nextSlot.label} 슬롯: 최대 ${oldSlot.maxChars}자 → ${nextSlot.maxChars}자`,
+      );
+  }
+  const changedContent = new Set([
+    ...Object.keys(before.sampleContent),
+    ...Object.keys(current.sampleContent),
+  ]);
+  const changedContentCount = [...changedContent].filter(
+    (key) => before.sampleContent[key] !== current.sampleContent[key],
+  ).length;
+  if (changedContentCount)
+    changes.push(`예시 문구 ${changedContentCount}개 슬롯 변경`);
+  return (
+    <section className="version-diff" aria-label="템플릿 버전 변경점">
+      <div className="version-diff-head">
+        <div>
+          <span className="mini-label">버전 변경점</span>
+          <strong>
+            v{previous.version} → v{current.version}
+          </strong>
+        </div>
+        <span>{changes.length}개 변경</span>
+      </div>
+      <div className="version-previews">
+        <div>
+          <span>이전</span>
+          <SlideCanvas
+            template={before}
+            slide={{
+              id: `before-${before.id}`,
+              templateId: before.id,
+              templateVersion: before.version,
+              values: before.sampleContent,
+              theme: before.defaultTheme,
+            }}
+          />
+        </div>
+        <div>
+          <span>현재</span>
+          <SlideCanvas
+            template={current}
+            slide={{
+              id: `current-${current.id}`,
+              templateId: current.id,
+              templateVersion: current.version,
+              values: current.sampleContent,
+              theme: current.defaultTheme,
+            }}
+          />
+        </div>
+      </div>
+      <ul>
+        {(changes.length
+          ? changes
+          : ["내용 변경 없이 상태만 전환되었습니다."]
+        ).map((change) => (
+          <li key={change}>{change}</li>
+        ))}
+      </ul>
+    </section>
   );
 }

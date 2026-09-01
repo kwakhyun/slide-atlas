@@ -7,9 +7,12 @@ import {
   getTemplate,
   updateTemplate,
   reviewTemplate,
+  listTemplateVersions,
   rateLimit,
   insertDeck,
   getDeck,
+  duplicateDeck,
+  deleteDeck,
 } from "@/server/repository";
 import { SEED_TEMPLATES, EXAMPLE_BRIEF } from "@/lib/catalog";
 import { buildDeterministicDeck } from "@/lib/generate";
@@ -125,6 +128,52 @@ describe("PostgreSQL-backed operations", () => {
     ) as PromiseRejectedResult;
     expect(failure.reason.code).toBe("VERSION_CONFLICT");
     expect((await getTemplate(db, a, created.id)).version).toBe(2);
+  });
+  it("keeps immutable template snapshots across edits and review transitions", async () => {
+    const created = await insertTemplate(db, a, {
+      ...SEED_TEMPLATES[0],
+      name: "Versioned template",
+    });
+    const edited = await updateTemplate(
+      db,
+      a,
+      created.id,
+      { ...created, name: "Versioned template changed" },
+      1,
+    );
+    await reviewTemplate(
+      db,
+      a,
+      created.id,
+      "in_review",
+      edited.version,
+      "변경 내용을 검수해 주세요.",
+    );
+    const versions = await listTemplateVersions(db, a, created.id);
+    expect(versions.map((snapshot) => snapshot.version)).toEqual([3, 2, 1]);
+    expect(versions[0].data.status).toBe("in_review");
+    expect(versions[1].data.name).toBe("Versioned template changed");
+    expect(versions[2].data.name).toBe("Versioned template");
+  });
+  it("duplicates a deck with independent slide ids and protects the last deck", async () => {
+    const workspaceId = (await createWorkspace(db)).workspaceId;
+    const original = (await getWorkspaceState(db, workspaceId)).decks[0];
+    const copy = await duplicateDeck(db, workspaceId, original.id);
+    expect(copy.id).not.toBe(original.id);
+    expect(copy.title).toContain("복사본");
+    expect(copy.slides.map((slide) => slide.id)).not.toEqual(
+      original.slides.map((slide) => slide.id),
+    );
+    expect(copy.slides.map((slide) => slide.values)).toEqual(
+      original.slides.map((slide) => slide.values),
+    );
+    await deleteDeck(db, workspaceId, copy.id);
+    await expect(getDeck(db, workspaceId, copy.id)).rejects.toMatchObject({
+      status: 404,
+    });
+    await expect(
+      deleteDeck(db, workspaceId, original.id),
+    ).rejects.toMatchObject({ code: "LAST_DECK" });
   });
   it("rolls back related writes on transaction failure", async () => {
     await expect(

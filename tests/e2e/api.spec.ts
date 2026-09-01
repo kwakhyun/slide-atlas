@@ -10,6 +10,13 @@ test("session-scoped REST resources survive reload but cannot be read by another
   expect(bootstrap.status()).toBe(200);
   expect(bootstrap.headers()["set-cookie"]).toMatch(/HttpOnly/i);
   expect(bootstrap.headers()["set-cookie"]).toMatch(/SameSite=lax/i);
+  const versions = await request.get(
+    `/api/templates/${SEED_TEMPLATES[0].id}/versions`,
+  );
+  expect(versions.status()).toBe(200);
+  expect((await versions.json()).data).toMatchObject([
+    { templateId: SEED_TEMPLATES[0].id, version: 1 },
+  ]);
   const created = await request.post("/api/decks", {
     data: {
       brief: EXAMPLE_BRIEF,
@@ -44,6 +51,13 @@ test("session-scoped REST resources survive reload but cannot be read by another
     expect(
       (await other.patch(`/api/decks/${deck.id}`, { data: content })).status(),
     ).toBe(404);
+    const duplicated = await request.post(`/api/decks/${deck.id}/duplicate`);
+    expect(duplicated.status()).toBe(201);
+    const copy = (await duplicated.json()).data;
+    expect(copy.id).not.toBe(deck.id);
+    expect(copy.slides[0].id).not.toBe(deck.slides[0].id);
+    expect((await request.delete(`/api/decks/${copy.id}`)).status()).toBe(200);
+    expect((await request.get(`/api/decks/${copy.id}`)).status()).toBe(404);
     expect(
       (await request.get(`/api/decks/${deck.id}/export?format=svg`)).headers()[
         "content-type"

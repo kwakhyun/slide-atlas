@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
-import { type Deck, type SlideTemplate } from "@/lib/domain";
+import { type AiUsage, type Deck, type SlideTemplate } from "@/lib/domain";
 import { checkSlide } from "@/lib/quality";
 import type { Database } from "./database";
 import { AppError, invariant } from "./errors";
@@ -13,6 +13,29 @@ export function isAiConfigured() {
     !!process.env.OPENAI_API_KEY &&
     !!process.env.AI_ACCESS_CODE
   );
+}
+function requestLimit() {
+  const configured = Number(process.env.AI_DAILY_REQUEST_LIMIT ?? 30);
+  return Number.isSafeInteger(configured) && configured >= 0
+    ? Math.min(configured, 1000)
+    : 30;
+}
+export async function getAiUsage(db: Database): Promise<AiUsage> {
+  const day = new Date().toISOString().slice(0, 10);
+  const result = await db.query<{ calls: number }>(
+    "SELECT calls FROM ai_daily_budget WHERE day=$1",
+    [day],
+  );
+  const limit = requestLimit();
+  const used = Number(result.rows[0]?.calls ?? 0);
+  const resetsAt = new Date(`${day}T00:00:00.000Z`);
+  resetsAt.setUTCDate(resetsAt.getUTCDate() + 1);
+  return {
+    limit,
+    used,
+    remaining: Math.max(0, limit - used),
+    resetsAt: resetsAt.toISOString(),
+  };
 }
 export async function authorizeAi(db: Database, accessCode: string | null) {
   invariant(
@@ -29,11 +52,7 @@ export async function authorizeAi(db: Database, accessCode: string | null) {
     "AI_ACCESS_DENIED",
     "AI 실험 초대 코드를 확인해 주세요.",
   );
-  const configured = Number(process.env.AI_DAILY_REQUEST_LIMIT ?? 30);
-  const limit =
-    Number.isSafeInteger(configured) && configured >= 0
-      ? Math.min(configured, 1000)
-      : 30;
+  const limit = requestLimit();
   const day = new Date().toISOString().slice(0, 10);
   const result = await db.query<{ calls: number }>(
     "INSERT INTO ai_daily_budget(day,calls) VALUES($1,1) ON CONFLICT(day) DO UPDATE SET calls=ai_daily_budget.calls+1 RETURNING calls",

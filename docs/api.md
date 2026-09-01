@@ -10,18 +10,23 @@
 | GET    | `/workspace`                                                   | 템플릿·프레젠테이션·감사 이력·실험 기록 초기 조회 |
 | GET    | `/templates?q=…&intent=…&layout=…&status=…&slots=…&strategy=…` | 검색 결과, 점수, 이유, 구성 점수                  |
 | GET    | `/templates/:id`                                               | 템플릿 한 건 조회                                 |
+| GET    | `/templates/:id/versions`                                      | 최근 템플릿 버전 스냅샷 20개 조회                 |
 | POST   | `/templates`                                                   | Zod 스키마를 검증한 템플릿을 초안으로 등록        |
 | PATCH  | `/templates/:id`                                               | `{template, expectedVersion}`; 수정 후 초안       |
 | POST   | `/templates/:id/review`                                        | `{status, expectedVersion, note}`                 |
 | POST   | `/decks`                                                       | `{brief, count: 1..6, theme, provider}`           |
 | GET    | `/decks/:id`                                                   | 프레젠테이션                                      |
 | PATCH  | `/decks/:id`                                                   | `{title, slides, expectedVersion}`; 1..12장       |
+| POST   | `/decks/:id/duplicate`                                         | 슬라이드 ID를 새로 발급하여 프레젠테이션 복제     |
+| DELETE | `/decks/:id`                                                   | 프레젠테이션 삭제; 마지막 한 건은 삭제할 수 없음  |
 | GET    | `/decks/:id/export?format=pptx\|svg\|json&slide=0`             | 첨부 파일로 내보내기; SVG는 지정한 한 장          |
 | POST   | `/experiments`                                                 | 현재 승인 카탈로그의 고정 검색 평가 실행·저장     |
 
 `provider`에는 `deterministic` 또는 `openai`를 지정합니다. OpenAI를 사용하려면 서버 설정과 함께 `X-AI-Access-Code` 헤더가 필요합니다. 템플릿 JSON 구조는 [domain.ts](../src/lib/domain.ts), 예시 데이터는 [catalog.ts](../src/lib/catalog.ts)를 참고해 주세요. JSON 가져오기는 온톨로지 데이터 등록용이며 `.pptx`나 `.pdf` 파일을 분석하는 기능은 아닙니다.
 
 공개 서비스는 초대 코드 방식의 OpenAI 생성을 활성화했습니다. 초대 코드가 없거나 일치하지 않으면 모델 호출 전에 `403 AI_ACCESS_DENIED`를 반환합니다. 성공한 프레젠테이션의 `generation`에는 `model`, `promptVersion`, `durationMs`, `inputTokens`, `outputTokens`를 기록합니다. 실제 모델 API 키를 요청 본문이나 이 헤더에 넣으시면 안 됩니다.
+
+템플릿을 등록·수정·검수할 때마다 `template_versions`에 변경 불가능한 JSONB 스냅샷을 저장합니다. 검수 화면은 상태만 바뀐 버전을 건너뛰고 실제 내용이 달라진 이전 버전과 비교합니다. 프레젠테이션 복제 시에는 원본과 분리된 새 프레젠테이션 ID와 슬라이드 ID를 발급하며, 삭제 후에도 감사 이벤트는 유지합니다.
 
 ## 오류 응답
 

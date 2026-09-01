@@ -18,6 +18,18 @@ CREATE TABLE IF NOT EXISTS templates (
 );
 CREATE INDEX IF NOT EXISTS templates_structure_idx ON templates(workspace_id, status, intent, layout);
 CREATE INDEX IF NOT EXISTS templates_search_idx ON templates USING GIN (to_tsvector('simple', search_text));
+CREATE TABLE IF NOT EXISTS template_versions (
+  workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  template_id TEXT NOT NULL,
+  version INTEGER NOT NULL CHECK (version > 0),
+  data JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (workspace_id, template_id, version)
+);
+CREATE INDEX IF NOT EXISTS template_versions_lookup_idx ON template_versions(workspace_id, template_id, version DESC);
+INSERT INTO template_versions (workspace_id,template_id,version,data,created_at)
+SELECT workspace_id,id,version,data,updated_at FROM templates
+ON CONFLICT (workspace_id,template_id,version) DO NOTHING;
 CREATE TABLE IF NOT EXISTS decks (
   workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
   id TEXT NOT NULL,

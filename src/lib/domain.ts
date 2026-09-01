@@ -181,6 +181,12 @@ export interface SlideTemplate extends TemplateInput {
   status: TemplateStatus;
   updatedAt: string;
 }
+export interface TemplateVersionSnapshot {
+  templateId: string;
+  version: number;
+  data: SlideTemplate;
+  createdAt: string;
+}
 
 export const slideSchema = z.object({
   id: z.string().min(1).max(80),
@@ -272,10 +278,18 @@ export interface Experiment {
   durationMs: number;
   datasetVersion: string;
   catalogVersion: string;
+  datasetHash?: string;
+  catalogHash?: string;
   size: number;
   lexical: { hitAt1: number; mrr: number };
   structure: { hitAt1: number; mrr: number };
   results: EvalResult[];
+}
+export interface AiUsage {
+  limit: number;
+  used: number;
+  remaining: number;
+  resetsAt: string;
 }
 export interface WorkspaceState {
   templates: SlideTemplate[];
@@ -284,6 +298,7 @@ export interface WorkspaceState {
   experiments: Experiment[];
   storage: "postgres" | "embedded" | "ephemeral";
   aiAvailable: boolean;
+  aiUsage?: AiUsage;
 }
 
 export const generationInputSchema = z.object({

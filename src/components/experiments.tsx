@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -28,16 +29,36 @@ export function Experiments() {
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [allCases, setAllCases] = useState(false);
+  const [comparisonId, setComparisonId] = useState<string | null>(null);
+  const [resultFilter, setResultFilter] = useState<
+    "all" | "failed" | "improved" | "declined"
+  >("all");
   if (!state) return <LoadingWorkspace />;
   const run =
     state.experiments.find((e) => e.id === selectedId) ?? state.experiments[0];
-  const cases = run?.results ?? [];
+  const baseline =
+    state.experiments.find((experiment) => experiment.id === comparisonId) ??
+    state.experiments.find((experiment) => experiment.id !== run?.id);
+  const cases = (run?.results ?? []).filter((item) => {
+    if (resultFilter === "failed") return !item.structureHit;
+    if (resultFilter === "improved")
+      return item.structureHit && !item.lexicalHit;
+    if (resultFilter === "declined")
+      return !item.structureHit && item.lexicalHit;
+    return true;
+  });
+  const failedIntent = EVAL_CASES.find(
+    (item) =>
+      item.id === run?.results.find((result) => !result.structureHit)?.id,
+  )?.intent;
   async function execute() {
     setBusy(true);
     try {
+      const previousRunId = run?.id ?? null;
       const result = await api<Experiment>("/experiments", { method: "POST" });
       await refresh();
       setSelectedId(result.id);
+      setComparisonId(previousRunId);
       notify(`${result.size}개 질의의 검색 비교 실험을 저장했습니다.`);
     } catch (error) {
       notify((error as Error).message, true);
@@ -55,6 +76,42 @@ export function Experiments() {
     link.download = `atlas-evaluation-${run.id}.json`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function exportCsv() {
+    if (!run) return;
+    const rows = [
+      [
+        "id",
+        "query",
+        "lexical_hit",
+        "structure_hit",
+        "lexical_rr",
+        "structure_rr",
+      ],
+      ...run.results.map((item) => [
+        item.id,
+        item.query,
+        item.lexicalHit,
+        item.structureHit,
+        item.lexicalRR,
+        item.structureRR,
+      ]),
+    ];
+    const csv = rows
+      .map((row) =>
+        row
+          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+          .join(","),
+      )
+      .join("\n");
+    const url = URL.createObjectURL(
+      new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `atlas-evaluation-${run.id}.csv`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   return (
     <div className="page experiments-page">
@@ -172,6 +229,16 @@ export function Experiments() {
               {run ? `${run.size}개` : `${EVAL_CASES.length}개 준비됨`}
             </strong>
           </div>
+          {run && (
+            <div className="run-hashes">
+              <span title={run.datasetHash ?? run.datasetVersion}>
+                데이터 {shortHash(run.datasetHash ?? run.datasetVersion)}
+              </span>
+              <span title={run.catalogHash ?? "이전 실행 기록"}>
+                카탈로그 {shortHash(run.catalogHash)}
+              </span>
+            </div>
+          )}
           <p>
             {run
               ? new Date(run.createdAt).toLocaleString("ko-KR")
@@ -190,8 +257,8 @@ export function Experiments() {
             </h2>
             <p>잘 찾은 경우와 놓친 경우를 함께 확인하세요.</p>
           </div>
-          {state.experiments.length > 0 && (
-            <>
+          {state.experiments.length > 0 && run && (
+            <div className="experiment-controls">
               <label className="sr-only" htmlFor="experiment-history">
                 실험 기록 선택
               </label>
@@ -211,11 +278,57 @@ export function Experiments() {
                   </option>
                 ))}
               </select>
-            </>
+              <label className="sr-only" htmlFor="experiment-baseline">
+                비교 기준 실행
+              </label>
+              <select
+                id="experiment-baseline"
+                aria-label="비교 기준 실행"
+                value={baseline?.id ?? ""}
+                disabled={state.experiments.length < 2}
+                onChange={(event) => setComparisonId(event.target.value)}
+              >
+                {state.experiments
+                  .filter((experiment) => experiment.id !== run.id)
+                  .map((experiment, index) => (
+                    <option key={experiment.id} value={experiment.id}>
+                      비교 {index + 1} · {formatRunTime(experiment.createdAt)}
+                    </option>
+                  ))}
+                {state.experiments.length < 2 && (
+                  <option value="">비교할 실행 없음</option>
+                )}
+              </select>
+              <label className="sr-only" htmlFor="experiment-result-filter">
+                결과 필터
+              </label>
+              <select
+                id="experiment-result-filter"
+                aria-label="결과 필터"
+                value={resultFilter}
+                onChange={(event) => {
+                  setResultFilter(
+                    event.target.value as
+                      "all" | "failed" | "improved" | "declined",
+                  );
+                  setAllCases(false);
+                }}
+              >
+                <option value="all">전체 결과</option>
+                <option value="failed">구조 검색 실패</option>
+                <option value="improved">개선된 결과</option>
+                <option value="declined">하락한 결과</option>
+              </select>
+              <button className="btn small" onClick={exportCsv}>
+                <ArrowDownToLine size={14} />
+                CSV
+              </button>
+            </div>
           )}
         </div>
         {run ? (
           <>
+            {baseline && <RunComparison current={run} baseline={baseline} />}
             <div className="table-scroll">
               <table className="results-table">
                 <thead>
@@ -227,6 +340,13 @@ export function Experiments() {
                   </tr>
                 </thead>
                 <tbody>
+                  {cases.length === 0 && (
+                    <tr>
+                      <td className="no-results-cell" colSpan={4}>
+                        선택한 조건에 해당하는 결과가 없습니다.
+                      </td>
+                    </tr>
+                  )}
                   {cases.slice(0, allCases ? cases.length : 8).map((row) => (
                     <tr key={row.id}>
                       <td>
@@ -263,10 +383,15 @@ export function Experiments() {
                 </tbody>
               </table>
             </div>
-            <button className="show-all" onClick={() => setAllCases(!allCases)}>
-              {allCases ? "간략히 보기" : `${cases.length}개 질의 모두 보기`}
-              <ChevronDown size={14} />
-            </button>
+            {cases.length > 8 && (
+              <button
+                className="show-all"
+                onClick={() => setAllCases(!allCases)}
+              >
+                {allCases ? "간략히 보기" : `${cases.length}개 질의 모두 보기`}
+                <ChevronDown size={14} />
+              </button>
+            )}
           </>
         ) : (
           <div className="empty-state evaluation-empty">
@@ -282,7 +407,14 @@ export function Experiments() {
           </div>
         )}
       </section>
-      <div className="experiment-next">
+      <Link
+        className="experiment-next"
+        href={
+          failedIntent
+            ? { pathname: "/library", query: { intent: failedIntent } }
+            : "/library"
+        }
+      >
         <Sparkles size={18} />
         <div>
           <strong>다음 실험은 실패 사례에서 시작합니다.</strong>
@@ -292,10 +424,80 @@ export function Experiments() {
           </p>
         </div>
         <ArrowRight size={20} />
+      </Link>
+    </div>
+  );
+}
+
+function shortHash(value?: string) {
+  return value ? value.slice(0, 12) : "기록 없음";
+}
+
+function formatRunTime(value: string) {
+  return new Date(value).toLocaleTimeString("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+function RunComparison({
+  current,
+  baseline,
+}: {
+  current: Experiment;
+  baseline: Experiment;
+}) {
+  const datasetMatches =
+    (current.datasetHash ?? current.datasetVersion) ===
+    (baseline.datasetHash ?? baseline.datasetVersion);
+  const catalogMatches =
+    Boolean(current.catalogHash) &&
+    current.catalogHash === baseline.catalogHash;
+  const hitDelta = (current.structure.hitAt1 - baseline.structure.hitAt1) * 100;
+  const mrrDelta = current.structure.mrr - baseline.structure.mrr;
+  return (
+    <div className="run-comparison" aria-label="실험 실행 비교">
+      <div>
+        <span className="mini-label">RUN COMPARISON</span>
+        <strong>
+          {formatRunTime(current.createdAt)} 실행과{" "}
+          {formatRunTime(baseline.createdAt)}
+          실행 비교
+        </strong>
+      </div>
+      <dl>
+        <div>
+          <dt>구조 Hit@1</dt>
+          <dd className={hitDelta >= 0 ? "positive" : "negative"}>
+            {hitDelta >= 0 ? "+" : ""}
+            {hitDelta.toFixed(1)}pp
+          </dd>
+        </div>
+        <div>
+          <dt>구조 MRR</dt>
+          <dd className={mrrDelta >= 0 ? "positive" : "negative"}>
+            {mrrDelta >= 0 ? "+" : ""}
+            {mrrDelta.toFixed(3)}
+          </dd>
+        </div>
+      </dl>
+      <div className="comparison-hashes">
+        <span
+          className={datasetMatches ? "hash-badge match" : "hash-badge changed"}
+        >
+          평가셋 {datasetMatches ? "동일" : "변경"}
+        </span>
+        <span
+          className={catalogMatches ? "hash-badge match" : "hash-badge changed"}
+        >
+          카탈로그 {catalogMatches ? "동일" : "변경 또는 미기록"}
+        </span>
       </div>
     </div>
   );
 }
+
 function ResultLabel({ hit }: { hit: boolean }) {
   return (
     <strong className={`result-label ${hit ? "hit" : "miss"}`}>
