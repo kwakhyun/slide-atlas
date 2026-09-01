@@ -1,19 +1,19 @@
 # 배포와 검증 기록
 
-검증 기준일은 2026-08-31입니다. 실제로 실행한 검사와 아직 확인하지 않은 항목을 구분해 기록했습니다.
+검증 기준일은 2026-09-01입니다. 실제로 실행한 검사와 아직 확인하지 않은 항목을 구분해 기록했습니다.
 
 ## 공개 결과물
 
-| 항목              | 실제 상태                                                                                            |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| 서비스            | [Slide Atlas](https://slide-atlas-mu.vercel.app)                                                     |
-| 저장소            | [kwakhyun/slide-atlas](https://github.com/kwakhyun/slide-atlas)                                      |
-| 런타임 코드 기준  | [`8765dec`](https://github.com/kwakhyun/slide-atlas/commit/8765decef18168bff86537aadb95ecfdd698198f) |
-| 배포 환경         | Vercel, Next.js, Node.js 24                                                                          |
-| 공개 데이터 저장  | 전용 Neon PostgreSQL, `slide-atlas-db`, Free 요금제                                                  |
-| 생성 방식         | 규칙 기반 기본 제공, 초대 코드로 실제 OpenAI 생성 사용 가능                                          |
-| AI 설정 반영 배포 | `dpl_3fys1z7krvmChTZkpYUMj8pwCed3`, Production, Ready                                                |
-| 방문자 구분       | 계정 로그인 없이 HttpOnly 쿠키로 데모 작업 공간 분리                                                 |
+| 항목             | 실제 상태                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------- |
+| 서비스           | [Slide Atlas](https://slide-atlas-mu.vercel.app)                                                     |
+| 저장소           | [kwakhyun/slide-atlas](https://github.com/kwakhyun/slide-atlas)                                      |
+| 런타임 코드 기준 | [`06b747f`](https://github.com/kwakhyun/slide-atlas/commit/06b747f7d9912a0f1fdfddf6d2db022bd5bb3b3f) |
+| 배포 환경        | Vercel, Next.js, Node.js 24                                                                          |
+| 공개 데이터 저장 | 전용 Neon PostgreSQL, `slide-atlas-db`, Free 요금제                                                  |
+| 생성 방식        | 규칙 기반 기본 제공, 초대 코드로 실제 OpenAI 생성 사용 가능                                          |
+| 최신 운영 배포   | `dpl_9KVPngFG27hUuS14KUzLB6yutDcF`, Production, Ready                                                |
+| 방문자 구분      | 계정 로그인 없이 HttpOnly 쿠키로 데모 작업 공간 분리                                                 |
 
 커밋된 런타임 소스와 lockfile을 Vercel에 전달해 배포했습니다. 환경 파일, 자격 증명, 로컬 DB, 테스트 산출물은 배포 파일에 포함하지 않았습니다. GitHub에 푸시하면 CI가 실행되지만, Vercel의 Git 자동 배포 연결은 설정하지 않았습니다. DB 전환과 AI 활성화는 서버 환경 변수로 반영했으며, 문서 수정은 위 런타임 코드의 동작을 변경하지 않습니다.
 
@@ -39,11 +39,11 @@
 
 | 환경                    | DB                   | 확인한 결과                                                         |
 | ----------------------- | -------------------- | ------------------------------------------------------------------- |
-| 로컬 개발·프로덕션 빌드 | 파일 PGlite          | 정적 검사, 53개 단위·통합 테스트, 17개 E2E 시나리오, 평가 재현 통과 |
-| GitHub Actions / Ubuntu | PostgreSQL 17 서비스 | 의존성 설치부터 빌드와 17개 E2E까지 전체 검증 절차 통과             |
-| 공개 Vercel 서비스      | 전용 Neon PostgreSQL | DB 전환 후 로그인 없이 17개 Playwright 시나리오 통과                |
+| 로컬 개발·프로덕션 빌드 | 파일 PGlite          | 정적 검사, 55개 단위·통합 테스트, 22개 E2E 시나리오, 평가 재현 통과 |
+| GitHub Actions / Ubuntu | PostgreSQL 17 서비스 | 의존성 설치부터 빌드와 22개 E2E까지 전체 검증 절차 통과             |
+| 공개 Vercel 서비스      | 전용 Neon PostgreSQL | 최신 배포 후 로그인 없이 22개 Playwright 시나리오 통과              |
 
-PostgreSQL CI의 [성공한 실행 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33352548854)과 [워크플로우](../.github/workflows/ci.yml)를 공개했습니다. 환경별로 같은 테스트를 반복한 것이므로 테스트 수를 합산하지 않았습니다. Neon 연결 후 공개 URL에서 실행한 17개 시나리오는 38.4초에 모두 통과했으며, AI 활성화 후 다시 실행했을 때도 35.3초에 모두 통과했습니다.
+PostgreSQL CI의 [성공한 실행 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33453864558)과 [워크플로우](../.github/workflows/ci.yml)를 공개했습니다. 환경별로 같은 테스트를 반복한 것이므로 테스트 수를 합산하지 않았습니다. 최신 운영 배포 후 공개 URL에서 실행한 22개 시나리오는 약 1분에 모두 통과했습니다. 이 검증에는 데스크톱·모바일 접근성, REST API 격리와 제한, 생성·편집·저장·PPTX·발표, 템플릿 검수, 버전 비교, 충돌 복구, 실험 비교가 포함됩니다.
 
 공개 URL 검증은 다음 명령으로 재현하실 수 있습니다. PowerShell에서 실행하며 별도의 로컬 서버는 시작하지 않습니다.
 
