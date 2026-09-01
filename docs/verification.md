@@ -12,11 +12,11 @@
 | 배포 환경        | Vercel, Next.js, Node.js 24                                                                                          |
 | 공개 데이터 저장 | 전용 Neon PostgreSQL, `slide-atlas-db`, Free 요금제                                                                  |
 | 생성 방식        | 규칙 기반 기본 제공, 초대 코드로 실제 OpenAI 생성 사용 가능                                                          |
-| 최신 운영 배포   | `dpl_83YasuK3tdirvruy3E5fcgoZUSt2`, Production, Ready                                                                |
+| 기준 운영 배포   | `dpl_83YasuK3tdirvruy3E5fcgoZUSt2`, Production, Ready                                                                |
 | GitHub 검증      | 기본 브랜치 `main`, [CI 워크플로우](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml), PostgreSQL 17 |
 | 방문자 구분      | 계정 로그인 없이 HttpOnly 쿠키로 데모 작업 공간 분리                                                                 |
 
-커밋된 `main` 런타임 소스와 lockfile을 Vercel CLI로 배포했습니다. `.vercelignore`에서 문서·테스트·로컬 산출물과 환경 파일을 제외해 업로드 크기를 391.2KB로 줄였으며, 자격 증명과 로컬 DB는 배포 파일에 포함하지 않았습니다. GitHub 푸시 CI는 정상 동작합니다. Vercel Git 자동 연결은 CLI에서 GitHub 저장소 접근 오류가 반복되어 완료하지 못했으며, Vercel GitHub App에 이 저장소의 접근 권한을 부여한 뒤 다시 연결해야 합니다. DB 전환과 AI 활성화는 서버 환경 변수로 반영했습니다.
+기준 `main` 런타임 소스와 lockfile은 Vercel CLI로 배포했습니다. `.vercelignore`에서 문서·테스트·로컬 산출물과 환경 파일을 제외해 업로드 크기를 391.2KB로 줄였으며, 자격 증명과 로컬 DB는 배포 파일에 포함하지 않았습니다. 이후 Vercel GitHub App의 저장소 접근 권한을 승인하고 프로젝트를 `kwakhyun/slide-atlas`에 연결했습니다. 연결 후 이 문서 커밋을 `main`에 푸시해 GitHub CI와 Vercel 운영 배포가 함께 생성되는 흐름을 확인했습니다. DB 전환과 AI 활성화는 서버 환경 변수로 반영했습니다.
 
 전용 DB는 Vercel의 `slide-atlas` 프로젝트 운영 환경에만 연결했습니다. 개발·미리보기 환경이나 기존 다른 프로젝트의 DB와는 공유하지 않았습니다. 접속 정보는 민감 환경 변수로 등록했으며, 비밀값을 열거나 문서에 기록하지 않았습니다.
 
