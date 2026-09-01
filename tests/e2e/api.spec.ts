@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { SEED_TEMPLATES, EXAMPLE_BRIEF } from "../../src/lib/catalog";
+import { buildDeterministicDeck } from "../../src/lib/generate";
+import { exportPptx } from "../../src/server/pptx";
 
 test("session-scoped REST resources survive reload but cannot be read by another visitor", async ({
   request,
@@ -161,4 +163,41 @@ test("generation limits are enforced by the database and advertise retry timing"
   });
   expect(limited.status()).toBe(429);
   expect(limited.headers()["retry-after"]).toBe("60");
+});
+
+test("PowerPoint upload extracts reviewable ontology candidates without persisting them", async ({
+  request,
+}) => {
+  const deck = buildDeterministicDeck(
+    EXAMPLE_BRIEF,
+    SEED_TEMPLATES,
+    "paper",
+    3,
+  );
+  const pptx = Buffer.from(await exportPptx(deck, SEED_TEMPLATES));
+  const before = (await (await request.get("/api/workspace")).json()).data
+    .templates.length;
+  const response = await request.post("/api/templates/extract", {
+    multipart: {
+      file: {
+        name: "operator-source.pptx",
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        buffer: pptx,
+      },
+    },
+  });
+  expect(response.status()).toBe(200);
+  const result = (await response.json()).data;
+  expect(result).toMatchObject({
+    fileName: "operator-source.pptx",
+    slideCount: 3,
+    analyzedSlides: 3,
+  });
+  expect(result.candidates).toHaveLength(3);
+  expect(result.candidates[0].template.slots.length).toBeGreaterThanOrEqual(2);
+  expect(result.candidates[0].confidence).toBeGreaterThan(0.5);
+  const after = (await (await request.get("/api/workspace")).json()).data
+    .templates.length;
+  expect(after).toBe(before);
 });

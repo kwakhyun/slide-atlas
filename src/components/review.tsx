@@ -21,7 +21,7 @@ import {
 import { api, LoadingWorkspace, useWorkspace } from "./workspace";
 import { Modal, PageHeading, StatusBadge } from "./ui";
 import { SlideCanvas } from "./slide-canvas";
-import { TemplateForm } from "./library";
+import { TemplateForm } from "./library/template-form";
 import {
   type SlideTemplate,
   type TemplateVersionSnapshot,

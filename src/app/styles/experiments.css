@@ -1,0 +1,425 @@
+.experiment-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 1.3px;
+  color: #b0c69b;
+}
+.experiment-hero h2 {
+  font-size: 31px;
+  font-weight: 600;
+  letter-spacing: -1.1px;
+  line-height: 1.5;
+  margin-top: 14px;
+}
+.experiment-hero p {
+  font-size: 11px;
+  line-height: 1.9;
+  color: #b1c29f;
+  margin-top: 10px;
+}
+.experiment-chips {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 23px;
+}
+.experiment-chips span {
+  padding: 4px 7px;
+  background: #304933;
+  border: 1px solid #4a633c;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #b3c89c;
+}
+.experiment-diagram {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 17px;
+  min-width: 0;
+}
+.diagram-input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border: 1px solid #5d704d;
+  border-radius: 7px;
+  color: #d3dfc4;
+  font-size: 12px;
+  background: #2c422f;
+}
+.diagram-input > svg {
+  color: #a4bd87;
+}
+.diagram-branches {
+  display: grid;
+  grid-template-columns: 1fr 25px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.diagram-branches > div {
+  padding: 15px;
+  background: #2b3f2d;
+  border: 1px solid #4c623e;
+  border-radius: 7px;
+  text-align: center;
+}
+.diagram-letter {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3f5837;
+  color: #c6d9b0;
+  font-size: 10px;
+  margin-bottom: 6px;
+}
+.diagram-branches strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+}
+.diagram-branches p {
+  font-size: 10px;
+  margin-top: 3px;
+  color: #cadfb7;
+}
+.diagram-branches > svg {
+  color: #849f69;
+}
+.diagram-branches > .enhanced {
+  border-color: #94b167;
+  background: #374f32;
+}
+.enhanced .diagram-letter {
+  background: #b9d497;
+  color: #344729;
+}
+.diagram-output {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px;
+  border: 1px dashed #5d764a;
+  border-radius: 5px;
+  color: #b6ce9c;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+}
+.experiment-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 23px 25px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-top: 19px;
+}
+.experiment-control .mini-label {
+  color: #5d6e4d;
+  font-size: 10px;
+}
+.experiment-control strong {
+  font-size: 13px;
+  font-weight: 600;
+  display: block;
+  margin-top: 5px;
+}
+.experiment-control p {
+  font-size: 10px;
+  color: #7a8a6c;
+  margin-top: 4px;
+}
+.experiment-control .btn {
+  padding: 11px 18px;
+}
+.evaluation-disclosure {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #f3f0e6;
+  border: 1px solid #e7dfcb;
+  color: #94783f;
+  border-radius: 7px;
+  padding: 12px 15px;
+  margin-top: 15px;
+}
+.evaluation-disclosure p {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #6b624a;
+}
+.metric-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 18px;
+  margin: 23px 0;
+}
+.metric-card,
+.experiment-meta-card {
+  padding: 21px 22px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.metric-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  color: #5c6c50;
+}
+.metric-label span:last-child {
+  background: #eef3e7;
+  color: #547642;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.metric-card h3 {
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 7px;
+  color: #7c8d6d;
+}
+.metric-comparison {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 19px;
+  gap: 10px;
+}
+.metric-comparison div > span {
+  display: block;
+  font-size: 10px;
+  color: #80916e;
+}
+.metric-comparison strong {
+  font-size: 28px;
+  font-weight: 550;
+  letter-spacing: -0.8px;
+  color: #a1ad92;
+  line-height: 1.4;
+  display: block;
+  margin-top: 3px;
+}
+.metric-comparison > div:last-child strong {
+  color: #496e33;
+}
+.metric-comparison > svg {
+  color: #b5c2a5;
+}
+.metric-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 15px;
+  background: #f6f8f2;
+  border-radius: 3px;
+  min-height: 15px;
+}
+.metric-bars > div {
+  height: 5px;
+  background: #c1ccb2;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.metric-bars > div:last-child {
+  background: #87a567;
+}
+.experiment-meta-card > .mini-label {
+  color: #5d704e;
+  display: block;
+  margin-bottom: 17px;
+}
+.experiment-meta-card > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+  font-size: 10px;
+  color: #5b6c4e;
+}
+.experiment-meta-card div > strong {
+  margin-left: auto;
+  color: #5c7b46;
+  font-size: 11px;
+  font-weight: 550;
+}
+.experiment-meta-card p {
+  font-size: 10px;
+  color: #7d8e6d;
+  line-height: 1.9;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  margin-top: 14px;
+}
+.evaluation-results {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.evaluation-results > .section-title {
+  padding: 23px 25px;
+  border-bottom: 1px solid var(--line);
+}
+.evaluation-results select {
+  font-size: 10px;
+  padding: 7px 10px;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+.results-table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: left;
+}
+.results-table th {
+  background: #fafcf7;
+  padding: 12px 24px;
+  border-bottom: 1px solid #e8eedd;
+  font-size: 10px;
+  font-weight: 500;
+  color: #7e9169;
+  white-space: nowrap;
+}
+.results-table td {
+  padding: 14px 24px;
+  border-bottom: 1px solid #edf2e5;
+  font-size: 10px;
+  color: #6d825b;
+}
+.results-table td:first-child {
+  width: 40%;
+}
+.results-table td > strong {
+  font-size: 11px;
+  font-weight: 500;
+  display: block;
+  color: #4c6540;
+}
+.results-table td > span:not(.delta) {
+  display: block;
+  font-size: 10px;
+  color: #849970;
+  margin-top: 4px;
+}
+.results-table td:first-child > span {
+  font-family: monospace;
+  color: #a2b38f;
+  font-size: 10px;
+}
+.results-table .result-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+.results-table .result-label.hit {
+  color: #5b813c;
+}
+.results-table .result-label.miss {
+  color: #b18656;
+}
+.delta {
+  font-size: 10px;
+  color: #8f9f7f;
+  display: inline-block;
+  white-space: nowrap;
+}
+.delta.positive {
+  color: #5e853b;
+  background: #ecf3e4;
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+.delta.negative {
+  color: #af653c;
+  background: #f9ede0;
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+.show-all {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 15px;
+  font-size: 10px;
+  color: #7b9067;
+}
+.show-all:hover {
+  background: #f6f9f1;
+}
+.evaluation-empty {
+  border: 0;
+  border-radius: 0;
+  background: white;
+  padding: 55px 20px;
+  gap: 8px;
+}
+.evaluation-empty h3 {
+  font-size: 15px;
+  color: #4b6540;
+  margin-top: 4px;
+  font-weight: 500;
+}
+.evaluation-empty > span {
+  font-size: 10px;
+  color: #879e71;
+  margin-top: 18px;
+}
+.example-queries {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.example-queries > span {
+  font-size: 10px;
+  background: #f3f7ed;
+  border: 1px solid #e7eedc;
+  color: #7d9567;
+  border-radius: 4px;
+  padding: 5px 7px;
+}
+.experiment-next {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+  padding: 23px;
+  color: #8ea977;
+  background: #f0f5e8;
+  border: 1px solid #e1ebd5;
+  border-radius: 10px;
+}
+.experiment-next strong {
+  font-size: 12px;
+  font-weight: 550;
+  color: #4d6c3b;
+}
+.experiment-next p {
+  font-size: 10px;
+  color: #7b9165;
+  margin-top: 4px;
+  line-height: 1.8;
+}
+.experiment-next > svg:last-child {
+  margin-left: auto;
+}

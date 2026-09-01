@@ -1,19 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ArrowDownToLine,
   ArrowRight,
   Check,
   ChevronLeft,
   ChevronDown,
   ChevronRight,
-  CircleCheck,
   CircleHelp,
   Copy,
-  FileText,
   Grid2X2,
   Layers3,
   Loader2,
@@ -21,8 +17,6 @@ import {
   MoreHorizontal,
   MousePointer2,
   Palette,
-  Play,
-  Plus,
   Redo2,
   Save,
   ShieldCheck,
@@ -31,11 +25,18 @@ import {
   Trash2,
   Undo2,
   WandSparkles,
-  X,
 } from "lucide-react";
 import { ApiError, api, LoadingWorkspace, useWorkspace } from "./workspace";
 import { SlideCanvas } from "./slide-canvas";
-import { Modal, PageHeading } from "./ui";
+import { PageHeading } from "./ui";
+import { StudioDialogs } from "./studio-dialogs";
+import {
+  QualityPanel,
+  SlideFilmstrip,
+  StudioHeaderActions,
+  StudioOnboarding,
+  StructureBar,
+} from "./studio-chrome";
 import { EXAMPLE_BRIEF } from "@/lib/catalog";
 import {
   type Deck,
@@ -371,104 +372,32 @@ export function Studio({ initialTemplateId }: { initialTemplateId?: string }) {
         title="생각을 구조로, 구조를 디자인으로."
         description="이야기에 맞는 구조를 찾고, 나만의 슬라이드로 완성하세요."
         actions={
-          <>
-            <button
-              className="btn"
-              disabled={!!busy}
-              onClick={async () => {
-                try {
-                  await save();
-                  router.push(`/present/${deck.id}`);
-                } catch {}
-              }}
-            >
-              <Play size={15} />
-              발표하기
-            </button>
-            <div className="export-wrap">
-              <button
-                className="btn dark"
-                disabled={!!busy}
-                aria-expanded={exportOpen}
-                onClick={() => setExportOpen(!exportOpen)}
-              >
-                {busy === "export" ? (
-                  <Loader2 className="spin" size={16} />
-                ) : (
-                  <ArrowDownToLine size={16} />
-                )}
-                내보내기
-                <ChevronDown size={14} />
-              </button>
-              {exportOpen && (
-                <div className="export-menu">
-                  <button onClick={() => void download("pptx")}>
-                    <FileText size={16} />
-                    <span>
-                      PowerPoint<small>편집 가능한 텍스트 · .pptx</small>
-                    </span>
-                  </button>
-                  <button onClick={() => void download("svg")}>
-                    <Layers3 size={16} />
-                    <span>
-                      현재 슬라이드 SVG<small>벡터 이미지 · .svg</small>
-                    </span>
-                  </button>
-                  <button onClick={() => void download("json")}>
-                    <Grid2X2 size={16} />
-                    <span>
-                      구조 데이터<small>원문·슬롯·템플릿 · .json</small>
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </>
+          <StudioHeaderActions
+            busy={busy}
+            exportOpen={exportOpen}
+            onPresent={() => {
+              void save()
+                .then(() => router.push(`/present/${deck.id}`))
+                .catch(() => {});
+            }}
+            onToggleExport={() => setExportOpen((open) => !open)}
+            onDownload={(format) => void download(format)}
+          />
         }
       />
       {onboardingOpen && (
-        <section className="onboarding-card" aria-label="3분 데모 안내">
-          <div>
-            <span className="mini-label">처음 오셨나요?</span>
-            <h2>세 단계로 핵심 흐름을 확인해 보세요.</h2>
-            <p>
-              예시 생성부터 구조 교체와 검색 실험까지 약 3분이면 충분합니다.
-            </p>
-          </div>
-          <ol>
-            <li>
-              <strong>1</strong>
-              <button
-                onClick={() => {
-                  setBrief(EXAMPLE_BRIEF);
-                  setTab("brief");
-                  setMobileView("input");
-                  document.getElementById("brief")?.focus();
-                }}
-              >
-                예시로 생성하기
-              </button>
-            </li>
-            <li>
-              <strong>2</strong>
-              <Link href="/library">승인 템플릿 고르기</Link>
-            </li>
-            <li>
-              <strong>3</strong>
-              <Link href="/experiments">검색 실험 확인하기</Link>
-            </li>
-          </ol>
-          <button
-            className="icon-btn onboarding-close"
-            aria-label="3분 데모 안내 닫기"
-            onClick={() => {
-              localStorage.setItem("slide-atlas-onboarding-v1", "done");
-              setOnboardingOpen(false);
-            }}
-          >
-            <X size={16} />
-          </button>
-        </section>
+        <StudioOnboarding
+          onUseExample={() => {
+            setBrief(EXAMPLE_BRIEF);
+            setTab("brief");
+            setMobileView("input");
+            document.getElementById("brief")?.focus();
+          }}
+          onClose={() => {
+            localStorage.setItem("slide-atlas-onboarding-v1", "done");
+            setOnboardingOpen(false);
+          }}
+        />
       )}
       <div className="project-strip">
         <div>
@@ -997,134 +926,46 @@ export function Studio({ initialTemplateId }: { initialTemplateId?: string }) {
             </label>
           </div>
           {qualityOpen && (
-            <div className="quality-panel">
-              <div className="section-label">
-                <span>규칙 기반 자동 검사</span>
-                <strong>
-                  통과{" "}
-                  {
-                    quality.checks.filter((item) => item.status === "pass")
-                      .length
-                  }{" "}
-                  · 오류 {quality.errors} · 경고 {quality.warnings}
-                </strong>
-                <button
-                  className="icon-btn"
-                  aria-label="품질 검사 닫기"
-                  onClick={() => setQualityOpen(false)}
-                >
-                  <X size={14} />
-                </button>
-              </div>
-              {quality.checks.map((check) => (
-                <div key={check.id} className={`quality-check ${check.status}`}>
-                  {check.status === "pass" ? (
-                    <CircleCheck size={15} />
-                  ) : (
-                    <TriangleAlert size={15} />
-                  )}
-                  <div>
-                    <strong>{check.name}</strong>
-                    <p>{check.message}</p>
-                  </div>
-                </div>
-              ))}
-              <p className="field-hint">
-                규칙 기반 검사이며 디자인 완성도·사실성을 보증하지 않습니다.
-              </p>
-            </div>
+            <QualityPanel
+              quality={quality}
+              onClose={() => setQualityOpen(false)}
+            />
           )}
-          <div className="filmstrip" ref={filmstripRef}>
-            {deck.slides.map((item, i) => {
-              const t = state.templates.find((t) => t.id === item.templateId)!;
-              return (
-                <button
-                  key={item.id}
-                  className={`film-item ${i === slideIndex ? "selected" : ""}`}
-                  aria-label={`${i + 1}번 슬라이드 선택`}
-                  aria-pressed={i === slideIndex}
-                  onClick={() => setIndex(i)}
-                >
-                  <div className="film-image">
-                    <SlideCanvas
-                      slide={item}
-                      template={t}
-                      slideNumber={i + 1}
-                    />
-                    <span className="film-number">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                  </div>
-                  <span className="film-label">{intentLabels[t.intent]}</span>
-                </button>
-              );
-            })}
-            <button
-              className="film-add"
-              aria-label="슬라이드 복제하여 추가"
-              disabled={deck.slides.length >= 12}
-              onClick={() => {
-                update({
-                  ...deck,
-                  slides: [
-                    ...deck.slides,
-                    {
-                      ...slide,
-                      id: crypto.randomUUID(),
-                      values: { ...slide.values },
-                    },
-                  ],
-                });
-                setIndex(deck.slides.length);
-              }}
-            >
-              <Plus size={22} />
-              <span>추가</span>
-            </button>
-          </div>
+          <SlideFilmstrip
+            deck={deck}
+            templates={state.templates}
+            slideIndex={slideIndex}
+            filmstripRef={filmstripRef}
+            onSelect={setIndex}
+            onDuplicate={() => {
+              update({
+                ...deck,
+                slides: [
+                  ...deck.slides,
+                  {
+                    ...slide,
+                    id: crypto.randomUUID(),
+                    values: { ...slide.values },
+                  },
+                ],
+              });
+              setIndex(deck.slides.length);
+            }}
+          />
         </section>
       </div>
-      <div className="structure-bar">
-        <div className="structure-icon">
-          <Layers3 size={19} />
-        </div>
-        <div>
-          <span className="mini-label">구조 정보</span>
-          <strong>
-            {template.name} <span>v{template.version}</span>
-          </strong>
-          <p>
-            의도: {intentLabels[template.intent]} <span>·</span> 슬롯{" "}
-            {template.slots.length}개 <span>·</span> 승인된 구조로 시작합니다
-          </p>
-        </div>
-        <div className="structure-select">
-          <label htmlFor="template-select">템플릿 바꾸기</label>
-          <select
-            id="template-select"
-            value={template.id}
-            onChange={(e) => {
-              const target = approved.find((t) => t.id === e.target.value);
-              if (!target) return;
-              updateSlide({
-                templateId: target.id,
-                templateVersion: target.version,
-                values: mapSourceToTemplate(deck.brief, target),
-              });
-              notify("원문을 새 템플릿의 슬롯에 다시 배치했습니다.");
-            }}
-          >
-            {!approved.some((t) => t.id === template.id) && (
-              <option value={template.id}>{template.name} (재검수 필요)</option>
-            )}
-            {approved.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} · {intentLabels[t.intent]}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      <StructureBar
+        template={template}
+        approved={approved}
+        onChange={(target) => {
+          updateSlide({
+            templateId: target.id,
+            templateVersion: target.version,
+            values: mapSourceToTemplate(deck.brief, target),
+          });
+          notify("내용을 새 템플릿 슬롯에 다시 배치했습니다.");
+        }}
+      />
       <div className="studio-disclaimer">
         <CircleHelp size={13} />
         <span>
@@ -1132,108 +973,28 @@ export function Studio({ initialTemplateId }: { initialTemplateId?: string }) {
           생성 후 내용과 넘침을 확인해 주세요.
         </span>
       </div>
-      {deckDialog === "rename" && (
-        <Modal
-          title="프레젠테이션 이름 변경"
-          subtitle="목록과 발표 화면에 표시할 이름을 입력해 주세요."
-          onClose={() => setDeckDialog(null)}
-        >
-          <form
-            className="modal-body compact-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void renameCurrentDeck();
-            }}
-          >
-            <label className="field-label" htmlFor="deck-title">
-              프레젠테이션 이름
-            </label>
-            <input
-              id="deck-title"
-              value={renameTitle}
-              onChange={(event) => setRenameTitle(event.target.value)}
-              minLength={1}
-              maxLength={80}
-              autoFocus
-              required
-            />
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setDeckDialog(null)}
-              >
-                취소
-              </button>
-              <button
-                className="btn dark"
-                disabled={!!busy || !renameTitle.trim()}
-              >
-                이름 저장
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-      {deckDialog === "delete" && (
-        <Modal
-          title="프레젠테이션 삭제"
-          subtitle="이 작업은 되돌릴 수 없습니다."
-          onClose={() => setDeckDialog(null)}
-        >
-          <div className="modal-body confirm-copy">
-            <p>
-              “{deck.title}”과 포함된 슬라이드 {deck.slides.length}장을
-              삭제합니다.
-            </p>
-            <div className="modal-actions">
-              <button className="btn" onClick={() => setDeckDialog(null)}>
-                취소
-              </button>
-              <button
-                className="btn danger"
-                disabled={!!busy}
-                onClick={() => void deleteCurrentDeck()}
-              >
-                삭제하기
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-      {conflictOpen && (
-        <Modal
-          title="새 버전이 저장되어 있습니다"
-          subtitle="현재 편집 내용은 유지하고 있습니다. 먼저 안전하게 보관해 주세요."
-          onClose={() => setConflictOpen(false)}
-        >
-          <div className="modal-body confirm-copy">
-            <p>
-              다른 작업에서 같은 프레젠테이션을 먼저 저장했습니다. 내 변경을
-              JSON으로 내려받거나 서버의 최신 버전을 불러올 수 있습니다.
-            </p>
-            <div className="modal-actions">
-              <button className="btn" onClick={downloadRecoveryDraft}>
-                내 변경 JSON 내려받기
-              </button>
-              <button
-                className="btn dark"
-                onClick={() => {
-                  void refresh().then(() => {
-                    setDraft(null);
-                    setHistory([]);
-                    setFuture([]);
-                    setConflictOpen(false);
-                    notify("서버의 최신 버전을 불러왔습니다.");
-                  });
-                }}
-              >
-                최신 버전 불러오기
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <StudioDialogs
+        deck={deck}
+        mode={deckDialog}
+        renameTitle={renameTitle}
+        busy={!!busy}
+        conflictOpen={conflictOpen}
+        onRenameTitle={setRenameTitle}
+        onCloseMode={() => setDeckDialog(null)}
+        onRename={() => void renameCurrentDeck()}
+        onDelete={() => void deleteCurrentDeck()}
+        onCloseConflict={() => setConflictOpen(false)}
+        onDownloadRecovery={downloadRecoveryDraft}
+        onReload={() => {
+          void refresh().then(() => {
+            setDraft(null);
+            setHistory([]);
+            setFuture([]);
+            setConflictOpen(false);
+            notify("서버의 최신 버전을 불러왔습니다.");
+          });
+        }}
+      />
     </div>
   );
 }

@@ -16,6 +16,8 @@ flowchart LR
   Q --> Deck[Deck + slots + theme]
   Deck --> SVG[SVG preview / export]
   Deck --> PPTX[Editable OOXML / PPTX]
+  SourcePPTX[Uploaded PPTX] --> Extract[Bounded OOXML extraction]
+  Extract --> T
   API --> E[Fixed evaluation runner]
   E --> R
 ```
@@ -25,6 +27,8 @@ flowchart LR
 `SlideTemplate`은 전달 의도, 레이아웃, 정보 밀도, 테마와 `Slot[]`으로 구성됩니다. 슬롯에는 내용의 역할, 정규화된 좌표, 글자 수 제한, 필수 여부를 지정합니다. `Slide`에서는 템플릿 ID와 버전, 슬롯 값, 테마를 분리해 저장하므로 스타일을 바꿔도 원문과 슬롯 내용은 유지됩니다.
 
 SVG와 PPTX는 같은 슬롯 좌표를 사용합니다. PPTX는 필요한 OOXML 파일을 생성한 뒤 `fflate`로 묶으며, 텍스트와 도형을 편집 가능한 개체로 저장합니다. 발표자 노트에는 원문, 템플릿 버전, 생성 방식을 남깁니다. 다만 글꼴 대체나 뷰어의 렌더링 방식에 따라 최종 표현은 달라질 수 있습니다.
+
+반대 방향의 PPTX 추출은 별도 Route Handler에서 수행합니다. 업로드 크기를 8MB로 제한하고 ZIP 중앙 디렉터리의 항목 수·암호화 여부·압축 해제 예상 크기를 확인한 뒤 `fflate`로 엽니다. 앞쪽 최대 12장의 텍스트 상자, 좌표와 글자 크기를 읽어 레이아웃·슬롯 역할·정보 밀도를 추론하고 동일한 `templateInputSchema`로 다시 검증합니다. 결과는 후보로만 반환하며 운영자가 등록 폼에서 확인하기 전에는 DB에 저장하지 않습니다. 이미지, 표, 차트와 마스터 복원은 이 PoC의 범위에 포함하지 않습니다.
 
 템플릿을 등록·수정·검수할 때마다 `template_versions`에 변경 불가능한 JSONB 사본을 저장하고, 검수 화면에서는 최근 20개 가운데 실제 내용이 달라진 이전 버전과 현재 버전을 비교합니다. 프레젠테이션의 각 슬라이드에도 생성 당시 `templateVersion`을 기록해 최신 버전과 달라졌는지 품질 검사에서 감지합니다. 다만 프레젠테이션이 과거 사본을 외래 키로 직접 참조하지는 않으며, 과거 버전으로 되돌리거나 일괄 재배치하는 기능은 아직 제공하지 않습니다.
 

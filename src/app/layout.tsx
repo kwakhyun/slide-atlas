@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { Workspace } from "@/components/workspace";
 import "./globals.css";
-import "./workbench.css";
+import "./styles/library.css";
+import "./styles/review.css";
+import "./styles/presentation.css";
+import "./styles/workflow.css";
+import "./styles/experiments.css";
+import "./styles/about.css";
+import "./styles/refinements.css";
 
 export const metadata: Metadata = {
   title: {

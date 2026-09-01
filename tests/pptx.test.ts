@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { unzipSync, strFromU8 } from "fflate";
 import { exportPptx } from "@/server/pptx";
+import { extractPptxTemplates } from "@/server/pptx-import";
 import { buildDeterministicDeck } from "@/lib/generate";
 import { SEED_TEMPLATES, EXAMPLE_BRIEF } from "@/lib/catalog";
 
@@ -42,5 +43,32 @@ describe("editable PowerPoint export", () => {
     expect(xml).not.toContain("<unsafe");
     expect(xml).toContain("&lt;unsafe");
     expect(xml).toContain("&amp;");
+  });
+
+  it("extracts editable slide geometry into ontology draft candidates", async () => {
+    const deck = buildDeterministicDeck(
+      EXAMPLE_BRIEF,
+      SEED_TEMPLATES,
+      "paper",
+      4,
+    );
+    const pptx = await exportPptx(deck, SEED_TEMPLATES);
+    const result = extractPptxTemplates(pptx, "strategy-review.pptx");
+
+    expect(result.slideCount).toBe(4);
+    expect(result.candidates).toHaveLength(4);
+    expect(result.candidates[0].template.slots.length).toBeGreaterThanOrEqual(
+      2,
+    );
+    expect(result.candidates[0].template.slots[0].x).toBeGreaterThanOrEqual(0);
+    expect(result.candidates[0].template.slots[0].w).toBeLessThanOrEqual(1);
+    expect(result.candidates[0].template.sampleContent.title).toBeTruthy();
+    expect(result.candidates[0].signals[0]).toMatch(/텍스트 블록/);
+  });
+
+  it("rejects a non-PowerPoint payload before decompression", () => {
+    expect(() =>
+      extractPptxTemplates(new TextEncoder().encode("not a pptx"), "fake.pptx"),
+    ).toThrow(/PowerPoint/);
   });
 });

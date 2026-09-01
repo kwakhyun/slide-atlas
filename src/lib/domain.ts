@@ -175,6 +175,26 @@ export const templateInputSchema = z
         });
   });
 export type TemplateInput = z.infer<typeof templateInputSchema>;
+export interface PptxExtractionCandidate {
+  slideNumber: number;
+  confidence: number;
+  signals: string[];
+  warnings: string[];
+  source: {
+    textBlocks: number;
+    decorativeShapes: number;
+    originalWidth: number;
+    originalHeight: number;
+  };
+  template: TemplateInput;
+}
+export interface PptxExtractionResult {
+  fileName: string;
+  slideCount: number;
+  analyzedSlides: number;
+  candidates: PptxExtractionCandidate[];
+  warnings: string[];
+}
 export interface SlideTemplate extends TemplateInput {
   id: string;
   version: number;

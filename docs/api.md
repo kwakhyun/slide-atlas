@@ -12,6 +12,7 @@
 | GET    | `/templates/:id`                                               | 템플릿 한 건 조회                                 |
 | GET    | `/templates/:id/versions`                                      | 최근 템플릿 버전 스냅샷 20개 조회                 |
 | POST   | `/templates`                                                   | Zod 스키마를 검증한 템플릿을 초안으로 등록        |
+| POST   | `/templates/extract`                                           | 8MB 이하 PPTX에서 최대 12장의 온톨로지 후보 추출  |
 | PATCH  | `/templates/:id`                                               | `{template, expectedVersion}`; 수정 후 초안       |
 | POST   | `/templates/:id/review`                                        | `{status, expectedVersion, note}`                 |
 | POST   | `/decks`                                                       | `{brief, count: 1..6, theme, provider}`           |
@@ -22,7 +23,9 @@
 | GET    | `/decks/:id/export?format=pptx\|svg\|json&slide=0`             | 첨부 파일로 내보내기; SVG는 지정한 한 장          |
 | POST   | `/experiments`                                                 | 현재 승인 카탈로그의 고정 검색 평가 실행·저장     |
 
-`provider`에는 `deterministic` 또는 `openai`를 지정합니다. OpenAI를 사용하려면 서버 설정과 함께 `X-AI-Access-Code` 헤더가 필요합니다. 템플릿 JSON 구조는 [domain.ts](../src/lib/domain.ts), 예시 데이터는 [catalog.ts](../src/lib/catalog.ts)를 참고해 주세요. JSON 가져오기는 온톨로지 데이터 등록용이며 `.pptx`나 `.pdf` 파일을 분석하는 기능은 아닙니다.
+`provider`에는 `deterministic` 또는 `openai`를 지정합니다. OpenAI를 사용하려면 서버 설정과 함께 `X-AI-Access-Code` 헤더가 필요합니다. 템플릿 JSON 구조는 [domain.ts](../src/lib/domain.ts), 예시 데이터는 [catalog.ts](../src/lib/catalog.ts)를 참고해 주세요.
+
+`POST /templates/extract`는 `multipart/form-data`의 `file` 필드로 `.pptx` 하나를 받습니다. 파일 크기, ZIP 항목 수, 암호화 여부와 압축 해제 예상 크기를 검사한 뒤 텍스트·좌표·글자 크기를 슬라이드별 `TemplateInput` 후보로 반환합니다. 분석만으로 템플릿을 저장하지 않으며 이미지·표·차트는 경고와 함께 제외합니다. `.pdf`는 지원하지 않습니다.
 
 공개 서비스는 초대 코드 방식의 OpenAI 생성을 활성화했습니다. 초대 코드가 없거나 일치하지 않으면 모델 호출 전에 `403 AI_ACCESS_DENIED`를 반환합니다. 성공한 프레젠테이션의 `generation`에는 `model`, `promptVersion`, `durationMs`, `inputTokens`, `outputTokens`를 기록합니다. 실제 모델 API 키를 요청 본문이나 이 헤더에 넣으시면 안 됩니다.
 
@@ -30,15 +33,15 @@
 
 ## 오류 응답
 
-| HTTP      | 예시 코드                                            | 의미                                 |
-| --------- | ---------------------------------------------------- | ------------------------------------ |
-| 400       | `INVALID_JSON`                                       | 파싱 불가능한 JSON                   |
-| 403       | `ORIGIN_DENIED`, `AI_ACCESS_DENIED`                  | 출처·AI 초대 코드 거절               |
-| 404       | `NOT_FOUND`                                          | 없는 리소스 또는 다른 세션의 리소스  |
-| 409       | `VERSION_CONFLICT`                                   | 최신 버전을 다시 읽어야 하는 충돌    |
-| 413 / 415 | `BODY_TOO_LARGE`, `JSON_REQUIRED`                    | 입력 크기·형식 제한                  |
-| 422       | `VALIDATION`, `INVALID_TRANSITION`, `QUALITY_FAILED` | 데이터 구조·상태 전이·품질 규칙 위반 |
-| 429       | `RATE_LIMIT`, `AI_DAILY_LIMIT`                       | 분당 또는 일별 예산 초과             |
-| 502 / 503 | AI 관련 명시적 코드                                  | 모델 오류 또는 비활성화              |
+| HTTP      | 예시 코드                                                             | 의미                                           |
+| --------- | --------------------------------------------------------------------- | ---------------------------------------------- |
+| 400       | `INVALID_JSON`                                                        | 파싱 불가능한 JSON                             |
+| 403       | `ORIGIN_DENIED`, `AI_ACCESS_DENIED`                                   | 출처·AI 초대 코드 거절                         |
+| 404       | `NOT_FOUND`                                                           | 없는 리소스 또는 다른 세션의 리소스            |
+| 409       | `VERSION_CONFLICT`                                                    | 최신 버전을 다시 읽어야 하는 충돌              |
+| 413 / 415 | `BODY_TOO_LARGE`, `JSON_REQUIRED`, `PPTX_SIZE_LIMIT`, `PPTX_REQUIRED` | 입력 크기·형식 제한                            |
+| 422       | `VALIDATION`, `INVALID_TRANSITION`, `QUALITY_FAILED`, `INVALID_PPTX`  | 데이터 구조·상태 전이·품질 규칙·파일 구조 위반 |
+| 429       | `RATE_LIMIT`, `AI_DAILY_LIMIT`                                        | 분당 또는 일별 예산 초과                       |
+| 502 / 503 | AI 관련 명시적 코드                                                   | 모델 오류 또는 비활성화                        |
 
 응답에는 `private, no-store` 캐시 정책을 적용합니다. 세션당 일반 데이터 변경은 분당 60회, 생성은 8회, 실험은 5회로 제한합니다. 분당 제한을 초과하면 `Retry-After: 60`으로 재시도 대기 시간을 안내합니다. AI 일일 한도를 초과한 경우에는 다음 UTC 날짜까지 남은 시간을 초 단위로 반환합니다.

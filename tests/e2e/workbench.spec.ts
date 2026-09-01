@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { unzipSync } from "fflate";
-import { SEED_TEMPLATES } from "../../src/lib/catalog";
+import { EXAMPLE_BRIEF, SEED_TEMPLATES } from "../../src/lib/catalog";
+import { buildDeterministicDeck } from "../../src/lib/generate";
+import { exportPptx } from "../../src/server/pptx";
 
 test("brief → editable deck → style replacement → save → PPTX → presentation", async ({
   page,
@@ -129,6 +131,43 @@ test("approved library template opens directly in Studio", async ({ page }) => {
     "템플릿을 첫 슬라이드에 적용했습니다",
   );
   await expect(page.getByLabel("템플릿 바꾸기")).toHaveValue(targetId!);
+});
+
+test("PowerPoint structure extraction opens a reviewable template draft", async ({
+  page,
+}) => {
+  const deck = buildDeterministicDeck(
+    EXAMPLE_BRIEF,
+    SEED_TEMPLATES,
+    "paper",
+    2,
+  );
+  const pptx = Buffer.from(await exportPptx(deck, SEED_TEMPLATES));
+  await page.goto("/library");
+  await page.getByRole("button", { name: "파일 가져오기" }).click();
+  const importer = page.getByRole("dialog", { name: "템플릿 초안 가져오기" });
+  await importer.locator("#pptx-file").setInputFiles({
+    name: "operator-source.pptx",
+    mimeType:
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    buffer: pptx,
+  });
+  await importer
+    .getByRole("button", { name: "구조 분석", exact: true })
+    .click();
+  await expect(importer.getByText("전체 2장 중 후보 2개")).toBeVisible();
+  await expect(importer.getByRole("radio")).toHaveCount(2);
+  await importer.getByRole("radio").nth(1).click();
+  await importer.getByRole("button", { name: "선택한 초안 검토" }).click();
+  const form = page.getByRole("dialog", { name: "새로운 구조 등록" });
+  await expect(
+    form.getByRole("textbox", { name: "템플릿 이름" }),
+  ).not.toHaveValue("");
+  await form.getByRole("button", { name: "초안 저장" }).click();
+  await expect(form).toHaveCount(0);
+  await expect(
+    page.getByText("새 템플릿을 초안으로 등록했습니다."),
+  ).toBeVisible();
 });
 
 test("deck and slide operations support rename, duplicate, undo, redo and delete", async ({
