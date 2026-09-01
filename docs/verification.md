@@ -4,17 +4,17 @@
 
 ## 공개 결과물
 
-| 항목             | 실제 상태                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------------ |
-| 서비스           | [Slide Atlas](https://slide-atlas-mu.vercel.app)                                                       |
-| 저장소           | [kwakhyun/slide-atlas](https://github.com/kwakhyun/slide-atlas), 기본 브랜치 `main`                    |
-| 런타임 코드 기준 | [`e906878`](https://github.com/kwakhyun/slide-atlas/commit/e9068789c340553f5ccd3dd1c617c65c2e435e1c)   |
-| 배포 환경        | Vercel, Next.js, Node.js 24                                                                            |
-| 공개 데이터 저장 | 전용 Neon PostgreSQL, `slide-atlas-db`, Free 요금제                                                    |
-| 생성 방식        | 규칙 기반 기본 제공, 초대 코드로 실제 OpenAI 생성 사용 가능                                            |
-| 최신 운영 배포   | `dpl_83YasuK3tdirvruy3E5fcgoZUSt2`, Production, Ready                                                  |
-| GitHub 검증      | [`main` 푸시 CI 성공](https://github.com/kwakhyun/slide-atlas/actions/runs/33468809210), PostgreSQL 17 |
-| 방문자 구분      | 계정 로그인 없이 HttpOnly 쿠키로 데모 작업 공간 분리                                                   |
+| 항목             | 실제 상태                                                                                                            |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 서비스           | [Slide Atlas](https://slide-atlas-mu.vercel.app)                                                                     |
+| 저장소           | [kwakhyun/slide-atlas](https://github.com/kwakhyun/slide-atlas), 기본 브랜치 `main`                                  |
+| 런타임 코드 기준 | [`e906878`](https://github.com/kwakhyun/slide-atlas/commit/e9068789c340553f5ccd3dd1c617c65c2e435e1c)                 |
+| 배포 환경        | Vercel, Next.js, Node.js 24                                                                                          |
+| 공개 데이터 저장 | 전용 Neon PostgreSQL, `slide-atlas-db`, Free 요금제                                                                  |
+| 생성 방식        | 규칙 기반 기본 제공, 초대 코드로 실제 OpenAI 생성 사용 가능                                                          |
+| 최신 운영 배포   | `dpl_83YasuK3tdirvruy3E5fcgoZUSt2`, Production, Ready                                                                |
+| GitHub 검증      | 기본 브랜치 `main`, [CI 워크플로우](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml), PostgreSQL 17 |
+| 방문자 구분      | 계정 로그인 없이 HttpOnly 쿠키로 데모 작업 공간 분리                                                                 |
 
 커밋된 `main` 런타임 소스와 lockfile을 Vercel CLI로 배포했습니다. `.vercelignore`에서 문서·테스트·로컬 산출물과 환경 파일을 제외해 업로드 크기를 391.2KB로 줄였으며, 자격 증명과 로컬 DB는 배포 파일에 포함하지 않았습니다. GitHub 푸시 CI는 정상 동작합니다. Vercel Git 자동 연결은 CLI에서 GitHub 저장소 접근 오류가 반복되어 완료하지 못했으며, Vercel GitHub App에 이 저장소의 접근 권한을 부여한 뒤 다시 연결해야 합니다. DB 전환과 AI 활성화는 서버 환경 변수로 반영했습니다.
 
@@ -44,7 +44,7 @@
 | GitHub Actions / Ubuntu | PostgreSQL 17 서비스 | 의존성 설치부터 빌드와 24개 E2E까지 전체 검증 절차 실행             |
 | 공개 Vercel 서비스      | 전용 Neon PostgreSQL | 운영 배포 후 상태 API·24개 E2E·런타임 오류 부재 확인                |
 
-PostgreSQL CI [워크플로우](../.github/workflows/ci.yml)를 공개했으며, 현재 `main` 커밋의 [실행 결과](https://github.com/kwakhyun/slide-atlas/actions/runs/33468809210)는 성공입니다. 같은 커밋을 배포한 공개 서비스에서도 Playwright 24개를 다시 실행해 모두 통과했고, 실행 직후 Vercel 집계에서 5xx와 런타임 오류가 없음을 확인했습니다. 환경별로 같은 테스트를 반복한 것이므로 테스트 수를 합산하지 않습니다. 이 검증에는 데스크톱·모바일 접근성, REST API 격리와 제한, 생성·편집·저장·PPTX 생성·추출·발표, 템플릿 검수, 버전 비교, 충돌 복구와 실험 비교가 포함됩니다.
+PostgreSQL CI [워크플로우](../.github/workflows/ci.yml)를 공개했으며, 런타임 커밋 `e906878`의 [실행 결과](https://github.com/kwakhyun/slide-atlas/actions/runs/33468809210)는 성공입니다. 같은 커밋을 배포한 공개 서비스에서도 Playwright 24개를 다시 실행해 모두 통과했고, 실행 직후 Vercel 집계에서 5xx와 런타임 오류가 없음을 확인했습니다. 환경별로 같은 테스트를 반복한 것이므로 테스트 수를 합산하지 않습니다. 이 검증에는 데스크톱·모바일 접근성, REST API 격리와 제한, 생성·편집·저장·PPTX 생성·추출·발표, 템플릿 검수, 버전 비교, 충돌 복구와 실험 비교가 포함됩니다.
 
 운영 역할 기반 시나리오는 콘텐츠·온톨로지·편집·검수·실험 담당자 5개 과제로 구성했고 모두 통과했습니다. 각 과제의 완료 기준, 자동화 런타임, 발견한 회귀와 연구 한계는 [운영 역할 검증 기록](operator-validation.md)에 구분해 기록했습니다.
 

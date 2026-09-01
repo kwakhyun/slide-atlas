@@ -4,7 +4,7 @@
 
 [![Verify product](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml)
 
-**[라이브 데모 열기](https://slide-atlas-mu.vercel.app)** · [PostgreSQL CI 통과 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33468809210)
+**[라이브 데모 열기](https://slide-atlas-mu.vercel.app)** · [런타임 커밋 CI 통과 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33468809210)
 
 ## 프로젝트 한눈에 보기
 
