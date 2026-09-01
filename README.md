@@ -4,7 +4,7 @@
 
 [![Verify product](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml)
 
-**[라이브 데모 열기](https://slide-atlas-mu.vercel.app)** · [PostgreSQL CI 통과 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33453864558)
+**[라이브 데모 열기](https://slide-atlas-mu.vercel.app)** · [PostgreSQL CI 통과 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33468809210)
 
 ## 프로젝트 한눈에 보기
 
@@ -47,6 +47,7 @@ Slide Atlas는 이 과정을 하나의 서비스로 연결한 **개인 포트폴
 - 라이브러리는 검색 관련도 구성과 정렬 기준을 보여 드리며, 실험실은 실행 간 지표·평가셋 해시·카탈로그 해시 비교, 결과 필터, CSV 내보내기를 제공합니다.
 - 모바일 Studio에서는 미리보기와 내용 입력을 한 번에 하나씩 전환하고, 첫 방문 시 3분 데모 안내를 제공합니다.
 - OpenAI 생성 중에는 진행 단계를 표시하고, 생성 후에는 모델·프롬프트 버전·토큰·소요 시간·남은 일일 요청 수를 확인하실 수 있습니다.
+- PPTX를 가져오면 저장 전에 슬라이드별 온톨로지 후보, 추론 근거, 신뢰도와 지원하지 않는 요소를 검토하실 수 있습니다.
 
 자세한 검토 근거와 반영 결과는 [기능·UI/UX 감사 보고서](docs/audit/2026-09-01/README.md)에서 확인하실 수 있습니다.
 
@@ -143,7 +144,7 @@ flowchart LR
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | TypeScript / ESLint / production build | 통과                                                                                                 |
 | Vitest                                 | **57개 통과**: 스키마·검색·품질·PPTX 생성·추출·DB 트랜잭션·격리·버전 사본·덱 관리·AI 출력 검증       |
-| Playwright                             | 로컬에서 **24개 통과**: 핵심 흐름·PPTX 추출·충돌 복구·버전 비교·모바일·접근성                        |
+| Playwright                             | 로컬·공개 서비스에서 각각 **24개 통과**: 핵심 흐름·PPTX 추출·충돌 복구·버전 비교·모바일·접근성       |
 | 운영 역할 시나리오                     | 콘텐츠·온톨로지·편집·검수·실험 역할 **5/5 통과**; [과제·판정·한계](docs/operator-validation.md) 공개 |
 | 접근성                                 | 5개 화면 × 1440px/390px, 대화상자에 axe WCAG A/AA 자동 위반 없음; 키보드 순환 확인                   |
 | 독립 PPTX 파싱                         | Python-pptx: 4장, 편집 가능한 텍스트 상자 46개, 발표자 노트 4개; XML well-formed                     |
