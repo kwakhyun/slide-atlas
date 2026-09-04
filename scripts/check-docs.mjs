@@ -82,7 +82,10 @@ const assertions = [
   [readme.includes("Playwright **25개**"), "README Playwright count"],
   [brief.includes("테스트 59개"), "brief Vitest count"],
   [brief.includes("Playwright 시나리오 25개"), "brief Playwright count"],
-  [verification.includes("59개 단위·통합 테스트"), "verification Vitest count"],
+  [
+    verification.includes("59개 단위 및 통합 테스트"),
+    "verification Vitest count",
+  ],
   [verification.includes("25개 E2E 시나리오"), "verification Playwright count"],
   [api.includes("`/templates/extract`"), "PPTX extraction API"],
   [
@@ -105,7 +108,7 @@ const assertions = [
   ],
   [architecture.includes("후보를 먼저 줄입니다"), "database search candidates"],
   [readme.includes("독립 홀드아웃 절차"), "holdout disclosure"],
-  [readiness.includes("실제 운영 임팩트와 협업"), "position fit limitation"],
+  [readiness.includes("운영 성과와 협업 경험"), "position fit limitation"],
   [userStudy.includes("참여자 식별 정보"), "user study privacy"],
   [holdoutCatalog.templates.length === 18, "holdout evaluator catalog"],
 ];
