@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-09-04",
+  "command": "npm audit --audit-level=high",
+  "packageLockSha256": "cb12f0bb90bf0d5d18f7a6c2c79c54c30d972182da302fd24461e745172a8bf9",
+  "sourceCiRun": "https://github.com/kwakhyun/slide-atlas/actions/runs/33832738567",
+  "vulnerabilities": {
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  }
+}
