@@ -158,7 +158,7 @@ flowchart LR
 | 실제 OpenAI 연동                       | 공개 API와 브라우저 검증 통과: 초대 코드 차단, 4장 생성, 저장, 편집, PPTX, 발표 확인                  |
 | 비밀값 노출 검사                       | Git 관리 파일, 브라우저 번들, 공개 응답에서 현재 API 키·초대 코드의 실제 문자열 미검출                |
 
-로컬 PGlite와 **PostgreSQL 17을 사용하는 GitHub CI에서 전체 검증 절차를 실행**합니다. 현재 공개된 [CI 통과 기록](https://github.com/kwakhyun/slide-atlas/actions/runs/33468809210)은 개선 전 커밋의 57개 테스트와 24개 브라우저 시나리오 결과입니다. 이번 개선본은 로컬 전체 검증을 통과했으며 원격 반영 뒤 새 CI 결과로 교체해야 합니다. 재현 명령과 배포 중 발견한 문제는 [배포·검증 기록](docs/verification.md)에 정리했습니다.
+로컬 PGlite와 **PostgreSQL 17을 사용하는 GitHub CI에서 전체 검증 절차를 실행**합니다. [최신 `main` CI](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml)에서 59개 단위·통합 테스트, 25개 브라우저 시나리오, 검색·홀드아웃·AI 입력·PPTX 평가와 프로덕션 빌드 결과를 확인할 수 있습니다. 재현 명령과 배포 중 발견한 문제는 [배포·검증 기록](docs/verification.md)에 정리했습니다.
 
 별도로 새 Vercel 운영 배포 전후에 프레젠테이션의 제목·버전·슬라이드 내용이 그대로 유지되는지도 확인했습니다. [데이터 보존 검증 결과](docs/persistence-verification.json)에는 세션 쿠키나 접속 비밀값을 포함하지 않았습니다.
 
