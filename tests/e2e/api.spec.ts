@@ -151,30 +151,31 @@ test("generation limits are enforced by the database and advertise retry timing"
   request,
 }) => {
   await request.get("/api/workspace");
-  for (let i = 0; i < 8; i++) {
-    expect(
-      (
-        await request.post("/api/decks", {
-          data: {
-            brief: EXAMPLE_BRIEF,
-            count: 1,
-            theme: "coral",
-            provider: "deterministic",
-          },
-        })
-      ).status(),
-    ).toBe(201);
+  let limitedStatus = 0;
+  let retryAfter: string | undefined;
+
+  // A public deployment can cross a wall-clock minute while this test runs.
+  // Seventeen attempts guarantee that one of the two adjacent windows exceeds
+  // the per-minute limit of eight without relying on the second the test starts.
+  for (let i = 0; i < 17; i++) {
+    const response = await request.post("/api/decks", {
+      data: {
+        brief: EXAMPLE_BRIEF,
+        count: 1,
+        theme: "coral",
+        provider: "deterministic",
+      },
+    });
+    expect([201, 429]).toContain(response.status());
+    if (response.status() === 429) {
+      limitedStatus = response.status();
+      retryAfter = response.headers()["retry-after"];
+      break;
+    }
   }
-  const limited = await request.post("/api/decks", {
-    data: {
-      brief: EXAMPLE_BRIEF,
-      count: 1,
-      theme: "coral",
-      provider: "deterministic",
-    },
-  });
-  expect(limited.status()).toBe(429);
-  expect(limited.headers()["retry-after"]).toBe("60");
+
+  expect(limitedStatus).toBe(429);
+  expect(retryAfter).toBe("60");
 });
 
 test("PowerPoint upload extracts reviewable ontology candidates without persisting them", async ({

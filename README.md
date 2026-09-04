@@ -4,22 +4,22 @@
 
 [![Verify product](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml)
 
-**[라이브 데모 열기](https://slide-atlas-mu.vercel.app)** · [10초 제품 흐름 영상](docs/demo/slide-atlas-walkthrough.webm) · [포지션 적합성 점검](docs/portfolio-readiness.md)
+**[라이브 데모 열기](https://slide-atlas-mu.vercel.app)** · [10초 제품 흐름 영상](docs/demo/slide-atlas-walkthrough.webm) · [채용 요건과 구현 근거](docs/portfolio-readiness.md)
 
 ## 프로젝트 한눈에 보기
 
-| 항목           | 내용                                                                                                  |
-| -------------- | ----------------------------------------------------------------------------------------------------- |
-| 형태           | AI 프레젠테이션 프로덕트 엔지니어 역할을 기준으로 기획한 개인 프로젝트                                |
-| 개발·검증 기간 | 2026.08.31–2026.09.04                                                                                 |
-| 개인 기여 범위 | 문제 정의, 데이터 모델, UI/UX, 프론트엔드, REST API, DB, AI 연동, 테스트, 배포                        |
-| 구현 데이터    | 직접 제작한 템플릿 18개, 전달 의도 6종, 슬롯·제약·검수 상태                                           |
-| 핵심 제품 흐름 | PPTX 구조 추출 → 등록·검수 → 구조 검색 → 생성·편집 → PPTX 출력 → 검색 실험                            |
-| 검증·운영 환경 | Vitest **59개**, Playwright **25개**, 운영 역할 시나리오 **5/5**, PostgreSQL CI, Neon, OpenAI, Vercel |
+| 항목           | 내용                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------ |
+| 형태           | AI 프레젠테이션 프로덕트 엔지니어 역할을 기준으로 기획한 개인 프로젝트                                       |
+| 개발·검증 기간 | 2026.08.31–2026.09.04                                                                                        |
+| 개인 기여 범위 | 문제 정의, 데이터 모델, UI/UX, 프론트엔드, REST API, DB, AI 연동, 테스트, 배포                               |
+| 구현 데이터    | 직접 제작한 템플릿 18개, 전달 의도 6종, 슬롯·제약·검수 상태                                                  |
+| 핵심 제품 흐름 | PPTX 구조 추출 → 등록·검수 → 구조 검색 → 생성·편집 → PPTX 출력 → 검색 실험                                   |
+| 검증·운영 환경 | Vitest **59개**, Playwright **25개**, 역할 기반 자동화 시나리오 **5/5**, PostgreSQL CI, Neon, OpenAI, Vercel |
 
 로그인이나 API 키 없이 체험하실 수 있습니다. 기본 생성 방식은 **LLM을 호출하지 않는 규칙 기반 모드**이며, 공개 서비스의 작업 데이터는 **전용 Neon PostgreSQL**에 저장합니다. **초대 코드를 받은 분은 OpenAI 생성도 사용하실 수 있습니다.** 작업 결과는 PPTX 또는 JSON으로 내려받으실 수 있으며, 실제 AI 호출을 포함한 운영 상태와 검증 결과는 [배포·검증 기록](docs/verification.md)에 정리했습니다.
 
-문서: [프로젝트 기획](docs/product-brief.md), [개발 판단 기록](docs/development-notes.md), [아키텍처](docs/architecture.md), [REST API](docs/api.md), [운영 역할 검증](docs/operator-validation.md), [배포·검증 기록](docs/verification.md), [보안과 한계](SECURITY.md)
+문서: [프로젝트 기획](docs/product-brief.md), [개발 판단 기록](docs/development-notes.md), [아키텍처](docs/architecture.md), [REST API](docs/api.md), [역할 기반 자동화 검증](docs/operator-validation.md), [배포·검증 기록](docs/verification.md), [보안과 한계](SECURITY.md)
 
 ![Slide Atlas — 실제 스튜디오 화면](docs/screenshots/studio.png)
 
@@ -140,25 +140,23 @@ flowchart LR
 - **fflate / OOXML:** 편집 가능한 PowerPoint를 생성하고, 제한된 PPTX에서 텍스트·좌표를 안전하게 추출합니다.
 - **Vercel:** Next.js 화면과 API를 함께 배포합니다. 저장 방식은 화면 하단과 `/api/health`에서 확인하실 수 있습니다.
 
-기술 선택의 이유와 검토한 대안은 [아키텍처 문서](docs/architecture.md)에 정리했습니다.
-
 ## 검증 결과
 
-| 범위                                   | 검증 결과 · 2026-09-04                                                                                |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| TypeScript / ESLint / production build | 통과                                                                                                  |
-| Vitest                                 | 로컬 **59개 통과**: 스키마, 검색, 품질, PPTX, DB 트랜잭션, 격리, 버전 사본, 덱 관리, AI 출력 검증     |
-| Playwright                             | 로컬 **25개 통과**, 공개 배포 기록 **24개 통과**: 핵심 흐름, PPTX, 충돌, 모바일, 접근성, 제품 식별    |
-| 운영 역할 시나리오                     | 콘텐츠, 온톨로지, 편집, 검수, 실험 역할 **5/5 통과**; [과제와 한계](docs/operator-validation.md) 공개 |
-| 접근성                                 | 5개 화면 × 1440px/390px, 대화상자에 axe WCAG A/AA 자동 위반 없음; 키보드 순환 확인                    |
-| 독립 PPTX 파싱                         | Python-pptx: 4장, 편집 가능한 텍스트 상자 46개, 발표자 노트 4개; XML well-formed                      |
-| 의존성 검사                            | `npm audit`: 취약점 0개, 검사 날짜 2026-09-01                                                         |
-| 문서 정합성                            | Markdown 로컬 링크, 검증 JSON, 핵심 수치와 템플릿 버전 설명 자동 검사 통과                            |
-| 평가 재현                              | 개발 검색셋, AI 입력 검증, PPTX 12개 왕복 검사 통과; 독립 홀드아웃과 사람 평가는 실행 대기            |
-| 실제 OpenAI 연동                       | 공개 API와 브라우저 검증 통과: 초대 코드 차단, 4장 생성, 저장, 편집, PPTX, 발표 확인                  |
-| 비밀값 노출 검사                       | Git 관리 파일, 브라우저 번들, 공개 응답에서 현재 API 키·초대 코드의 실제 문자열 미검출                |
+| 범위                                   | 검증 결과 · 2026-09-04                                                                              |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| TypeScript / ESLint / production build | 통과                                                                                                |
+| Vitest                                 | 로컬 **59개 통과**: 스키마, 검색, 품질, PPTX, DB 트랜잭션, 격리, 버전 사본, 덱 관리, AI 출력 검증   |
+| Playwright                             | 로컬·PostgreSQL CI **25개 통과**, 2026-09-01 공개 배포 **24개 통과**: 핵심 흐름, PPTX, 충돌, 모바일 |
+| 역할 기반 자동화 시나리오              | Playwright로 콘텐츠, 온톨로지, 편집, 검수, 실험 과제 **5/5 통과**; 외부 사용자 검증은 실행 대기     |
+| 접근성                                 | 5개 화면 × 1440px/390px, 대화상자에 axe WCAG A/AA 자동 위반 없음; 키보드 순환 확인                  |
+| 독립 PPTX 파싱                         | Python-pptx: 4장, 편집 가능한 텍스트 상자 46개, 발표자 노트 4개; XML well-formed                    |
+| 의존성 검사                            | `npm audit`: 취약점 0개, 검사 날짜 2026-09-04                                                       |
+| 문서 정합성                            | Markdown 로컬 링크, 검증 JSON, 핵심 수치와 템플릿 버전 설명 자동 검사 통과                          |
+| 평가 재현                              | 개발 검색셋, AI 입력 검증, PPTX 12개 왕복 검사 통과; 독립 홀드아웃과 사람 평가는 실행 대기          |
+| 실제 OpenAI 연동                       | 공개 API와 브라우저 검증 통과: 초대 코드 차단, 4장 생성, 저장, 편집, PPTX, 발표 확인                |
+| 비밀값 노출 검사                       | Git 관리 파일, 브라우저 번들, 공개 응답에서 현재 API 키·초대 코드의 실제 문자열 미검출              |
 
-로컬 PGlite와 **PostgreSQL 17을 사용하는 GitHub CI에서 전체 검증 절차를 실행**합니다. [최신 `main` CI](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml)에서 59개 단위·통합 테스트, 25개 브라우저 시나리오, 검색·홀드아웃·AI 입력·PPTX 평가와 프로덕션 빌드 결과를 확인할 수 있습니다. 재현 명령과 배포 중 발견한 문제는 [배포·검증 기록](docs/verification.md)에 정리했습니다.
+로컬 PGlite와 **PostgreSQL 17을 사용하는 GitHub CI에서 전체 검증 절차를 실행**합니다. [최신 `main` CI](https://github.com/kwakhyun/slide-atlas/actions/workflows/ci.yml)에서 59개 단위·통합 테스트, 25개 브라우저 시나리오, 검색 평가, 홀드아웃 카탈로그, AI 입력 평가, PPTX 평가와 프로덕션 빌드 결과를 확인할 수 있습니다. 재현 명령과 배포 중 발견한 문제는 [배포·검증 기록](docs/verification.md)에 정리했습니다.
 
 별도로 새 Vercel 운영 배포 전후에 프레젠테이션의 제목·버전·슬라이드 내용이 그대로 유지되는지도 확인했습니다. [데이터 보존 검증 결과](docs/persistence-verification.json)에는 세션 쿠키나 접속 비밀값을 포함하지 않았습니다.
 
@@ -205,7 +203,7 @@ AI 연동 설정은 `.env.example`의 서버 전용 항목을 참고해 주세�
 - 방문자별 HttpOnly 쿠키로 데모 작업 공간을 구분합니다. 기업용 계정이나 역할 기반 접근 제어(RBAC)는 구현하지 않았습니다. 다른 방문자의 프레젠테이션은 URL만으로 접근할 수 없습니다.
 - 보관 정책은 7일이며, 만료된 데이터는 다음 작업 공간 생성 시 정리합니다. 외부 DB를 연결하지 않은 Vercel 배포에서는 임시 메모리를 사용하므로 데이터가 초기화될 수 있습니다.
 - 템플릿의 과거 버전은 변경 불가능한 사본으로 보관하고 최근 20개를 비교할 수 있습니다. 다만 프레젠테이션이 생성 당시의 버전 사본을 외래 키로 직접 참조하거나 해당 버전으로 되돌리는 기능은 후속 과제로 남겨두었습니다.
-- 역할 기반 브라우저 시나리오 5개는 외부 참여자 관찰이 아닙니다. [고정 과제와 기록 양식](docs/user-study-protocol.md)은 준비했지만 운영자 3~5명이 수행하기 전에는 사용성 성과를 주장하지 않습니다.
+- 역할 기반 Playwright 시나리오 5개는 외부 참여자 관찰이 아닙니다. [고정 과제와 기록 양식](docs/user-study-protocol.md)은 준비했지만 운영자 3~5명이 수행하기 전에는 사용성 성과를 주장하지 않습니다.
 - 독립 검색 홀드아웃 실행기와 데이터 검증은 구현했지만 제3자가 정답 데이터를 만들기 전에는 결과가 없습니다. AI 24개 라이브 평가도 비용 승인과 두 명의 사람 검수가 필요합니다.
 - 대규모 검색 성능, 기업 보안 인증, 실시간 협업, 다양한 입력에서의 LLM 품질·장기 운영 비용, 운영자의 업무 성과는 아직 검증하지 않았습니다.
 
