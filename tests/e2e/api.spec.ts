@@ -3,6 +3,18 @@ import { SEED_TEMPLATES, EXAMPLE_BRIEF } from "../../src/lib/catalog";
 import { buildDeterministicDeck } from "../../src/lib/generate";
 import { exportPptx } from "../../src/server/pptx";
 
+test("health endpoint identifies the product under test", async ({
+  request,
+}) => {
+  const response = await request.get("/api/health");
+  expect(response.status()).toBe(200);
+  expect((await response.json()).data).toMatchObject({
+    product: "slide-atlas",
+    status: "ok",
+    api: "v1",
+  });
+});
+
 test("session-scoped REST resources survive reload but cannot be read by another visitor", async ({
   request,
   playwright,
@@ -130,9 +142,9 @@ test("malformed, cross-origin, unauthorized AI and invalid state changes fail wi
   });
   expect(transition.status()).toBe(422);
   expect((await transition.json()).error.code).toBe("INVALID_TRANSITION");
-  expect(
-    (await request.get("/api/templates/atlas-hero-01/unknown")).status(),
-  ).toBe(404);
+  const unknown = await request.get("/api/templates/atlas-hero-01/unknown");
+  expect(unknown.status()).toBe(404);
+  expect((await unknown.json()).error.code).toBe("NOT_FOUND");
 });
 
 test("generation limits are enforced by the database and advertise retry timing", async ({

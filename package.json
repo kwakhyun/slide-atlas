@@ -7,9 +7,11 @@
   "scripts": {
     "predev": "node scripts/setup-fonts.mjs",
     "dev": "next dev --hostname 0.0.0.0",
+    "dev:e2e": "next dev --hostname 127.0.0.1 --port 3107",
     "prebuild": "node scripts/setup-fonts.mjs",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
+    "start:e2e": "next start --hostname 127.0.0.1 --port 3107",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "format": "prettier --write .",
@@ -19,6 +21,11 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "eval": "tsx scripts/evaluate.ts",
+    "eval:holdout": "tsx scripts/evaluate-holdout.ts",
+    "eval:holdout:catalog": "tsx scripts/export-holdout-catalog.ts",
+    "eval:ai": "tsx scripts/evaluate-ai.ts",
+    "eval:pptx": "tsx scripts/evaluate-pptx.ts",
+    "demo:capture": "tsx scripts/capture-demo.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "check": "npm run docs:check && npm run lint && npm run typecheck && npm test && npm run build"
   },

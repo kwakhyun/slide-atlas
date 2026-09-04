@@ -13,12 +13,15 @@ import {
   type Deck,
   type Experiment,
   type AuditEvent,
+  type SearchPage,
+  type SearchQuery,
   type WorkspaceState,
 } from "@/lib/domain";
 import type { Database, DbSession } from "./database";
 import { invariant } from "./errors";
 import { checkSlide } from "@/lib/quality";
 import { getAiUsage, isAiConfigured } from "./ai";
+import { inferIntent, rankTemplates, tokenize } from "@/lib/search";
 
 const hash = (token: string) =>
   createHash("sha256").update(token).digest("hex");
@@ -159,6 +162,59 @@ export async function listTemplates(
     [workspaceId],
   );
   return rows.map((r) => r.data);
+}
+export async function searchTemplates(
+  db: DbSession,
+  workspaceId: string,
+  query: SearchQuery,
+  page: number,
+  pageSize: number,
+): Promise<SearchPage> {
+  const parameters: unknown[] = [workspaceId];
+  const where = ["workspace_id=$1"];
+  const bind = (value: unknown) => {
+    parameters.push(value);
+    return `$${parameters.length}`;
+  };
+  if (query.status) where.push(`status=${bind(query.status)}`);
+  if (query.intent) where.push(`intent=${bind(query.intent)}`);
+  if (query.layout) where.push(`layout=${bind(query.layout)}`);
+
+  const tokens = tokenize(query.q);
+  if (tokens.length) {
+    const textQuery = bind(query.q);
+    const lexical = [
+      `to_tsvector('simple', search_text) @@ plainto_tsquery('simple', ${textQuery})`,
+      ...tokens.map((token) => `LOWER(search_text) LIKE ${bind(`%${token}%`)}`),
+    ];
+    const inferred = query.intent ?? inferIntent(query.q);
+    if (query.strategy !== "lexical" && inferred)
+      lexical.push(`intent=${bind(inferred)}`);
+    where.push(`(${lexical.join(" OR ")})`);
+  }
+
+  const { rows } = await db.query<{ data: SlideTemplate }>(
+    `SELECT data FROM templates WHERE ${where.join(" AND ")} ORDER BY id`,
+    parameters,
+  );
+  const ranked = rankTemplates(
+    rows.map((row) => row.data),
+    query,
+  );
+  if (query.sort === "updated")
+    ranked.sort((a, b) =>
+      b.template.updatedAt.localeCompare(a.template.updatedAt),
+    );
+  if (query.sort === "name")
+    ranked.sort((a, b) => a.template.name.localeCompare(b.template.name, "ko"));
+  const offset = (page - 1) * pageSize;
+  return {
+    items: ranked.slice(offset, offset + pageSize),
+    page,
+    pageSize,
+    total: ranked.length,
+    hasNext: offset + pageSize < ranked.length,
+  };
 }
 export async function getTemplate(
   db: DbSession,

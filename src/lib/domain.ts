@@ -272,6 +272,14 @@ export interface SearchQuery {
   status?: TemplateStatus;
   slots?: number;
   strategy?: "lexical" | "structure";
+  sort?: "relevance" | "updated" | "name";
+}
+export interface SearchPage {
+  items: SearchMatch[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasNext: boolean;
 }
 export interface EvalCase {
   id: string;

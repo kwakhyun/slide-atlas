@@ -4,26 +4,28 @@
 
 첫 `/workspace` 요청에서 HttpOnly 쿠키로 세션을 발급합니다. 요청자가 임의의 작업 공간 ID를 지정할 수 없으며, 아래 데이터는 모두 서버가 세션에서 확인한 작업 공간에 속합니다. 데이터 변경 요청은 최대 64,000바이트의 JSON만 허용하고, 다른 출처에서 보내는 변경 요청은 거절합니다.
 
-| Method | Path                                                           | 목적                                              |
-| ------ | -------------------------------------------------------------- | ------------------------------------------------- |
-| GET    | `/health`                                                      | DB 연결·버전·저장 모드·AI 설정 상태               |
-| GET    | `/workspace`                                                   | 템플릿·프레젠테이션·감사·실험·AI 일일 사용량 조회 |
-| GET    | `/templates?q=…&intent=…&layout=…&status=…&slots=…&strategy=…` | 검색 결과, 점수, 이유, 구성 점수                  |
-| GET    | `/templates/:id`                                               | 템플릿 한 건 조회                                 |
-| GET    | `/templates/:id/versions`                                      | 최근 템플릿 버전 스냅샷 20개 조회                 |
-| POST   | `/templates`                                                   | Zod 스키마를 검증한 템플릿을 초안으로 등록        |
-| POST   | `/templates/extract`                                           | 8MB 이하 PPTX에서 최대 12장의 온톨로지 후보 추출  |
-| PATCH  | `/templates/:id`                                               | `{template, expectedVersion}`; 수정 후 초안       |
-| POST   | `/templates/:id/review`                                        | `{status, expectedVersion, note}`                 |
-| POST   | `/decks`                                                       | `{brief, count: 1..6, theme, provider}`           |
-| GET    | `/decks/:id`                                                   | 프레젠테이션                                      |
-| PATCH  | `/decks/:id`                                                   | `{title, slides, expectedVersion}`; 1..12장       |
-| POST   | `/decks/:id/duplicate`                                         | 슬라이드 ID를 새로 발급하여 프레젠테이션 복제     |
-| DELETE | `/decks/:id`                                                   | 프레젠테이션 삭제; 마지막 한 건은 삭제할 수 없음  |
-| GET    | `/decks/:id/export?format=pptx\|svg\|json&slide=0`             | 첨부 파일로 내보내기; SVG는 지정한 한 장          |
-| POST   | `/experiments`                                                 | 현재 승인 카탈로그의 고정 검색 평가 실행·저장     |
+| Method | Path                                                                                    | 목적                                              |
+| ------ | --------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| GET    | `/health`                                                                               | DB 연결·버전·저장 모드·AI 설정 상태               |
+| GET    | `/workspace`                                                                            | 템플릿·프레젠테이션·감사·실험·AI 일일 사용량 조회 |
+| GET    | `/templates?q=…&intent=…&layout=…&status=…&slots=…&strategy=…&sort=…&page=…&pageSize=…` | 검색 결과, 점수, 이유, 구성 점수와 페이지 정보    |
+| GET    | `/templates/:id`                                                                        | 템플릿 한 건 조회                                 |
+| GET    | `/templates/:id/versions`                                                               | 최근 템플릿 버전 스냅샷 20개 조회                 |
+| POST   | `/templates`                                                                            | Zod 스키마를 검증한 템플릿을 초안으로 등록        |
+| POST   | `/templates/extract`                                                                    | 8MB 이하 PPTX에서 최대 12장의 온톨로지 후보 추출  |
+| PATCH  | `/templates/:id`                                                                        | `{template, expectedVersion}`; 수정 후 초안       |
+| POST   | `/templates/:id/review`                                                                 | `{status, expectedVersion, note}`                 |
+| POST   | `/decks`                                                                                | `{brief, count: 1..6, theme, provider}`           |
+| GET    | `/decks/:id`                                                                            | 프레젠테이션                                      |
+| PATCH  | `/decks/:id`                                                                            | `{title, slides, expectedVersion}`; 1..12장       |
+| POST   | `/decks/:id/duplicate`                                                                  | 슬라이드 ID를 새로 발급하여 프레젠테이션 복제     |
+| DELETE | `/decks/:id`                                                                            | 프레젠테이션 삭제; 마지막 한 건은 삭제할 수 없음  |
+| GET    | `/decks/:id/export?format=pptx\|svg\|json&slide=0`                                      | 첨부 파일로 내보내기; SVG는 지정한 한 장          |
+| POST   | `/experiments`                                                                          | 현재 승인 카탈로그의 고정 검색 평가 실행·저장     |
 
 `provider`에는 `deterministic` 또는 `openai`를 지정합니다. OpenAI를 사용하려면 서버 설정과 함께 `X-AI-Access-Code` 헤더가 필요합니다. 템플릿 JSON 구조는 [domain.ts](../src/lib/domain.ts), 예시 데이터는 [catalog.ts](../src/lib/catalog.ts)를 참고해 주세요.
+
+`GET /templates`의 `page`는 1부터, `pageSize`는 1~50이며 기본값은 각각 1과 24입니다. `sort`는 `relevance`, `updated`, `name` 중 하나입니다. 성공 응답의 `data`는 `{ items, page, pageSize, total, hasNext }` 형태입니다. DB에서 세션 범위, 필터와 텍스트 후보를 먼저 제한하고 구조 점수와 정렬을 적용한 뒤 해당 페이지만 반환합니다.
 
 `POST /templates/extract`는 `multipart/form-data`의 `file` 필드로 `.pptx` 하나를 받습니다. 파일 크기, ZIP 항목 수, 암호화 여부와 압축 해제 예상 크기를 검사한 뒤 텍스트·좌표·글자 크기를 슬라이드별 `TemplateInput` 후보로 반환합니다. 분석만으로 템플릿을 저장하지 않으며 이미지·표·차트는 경고와 함께 제외합니다. `.pdf`는 지원하지 않습니다.
 

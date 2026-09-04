@@ -1,0 +1,165 @@
+{
+  "id": "atlas-pptx-synthetic-roundtrip-v1",
+  "evaluatedAt": "2026-09-04T02:27:56.029Z",
+  "sampleType": "synthetic-self-roundtrip",
+  "sampleSize": 12,
+  "catalogVersion": "atlas-hero-01@1|atlas-hero-02@1|atlas-split-01@1|atlas-split-02@1|atlas-metrics-01@1|atlas-metrics-02@1|atlas-steps-01@1|atlas-steps-02@1|atlas-timeline-01@1|atlas-timeline-02@1|atlas-editorial-01@1|atlas-editorial-02@1",
+  "metrics": {
+    "extractionRate": 1,
+    "layoutAccuracy": 1,
+    "intentAccuracy": 1,
+    "slotTextRecoveryRate": 0.96875,
+    "coordinateMae": 0
+  },
+  "results": [
+    {
+      "slideNumber": 1,
+      "templateId": "atlas-hero-01",
+      "extracted": true,
+      "actualLayout": "hero",
+      "actualIntent": "overview",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 3,
+      "expectedSlots": 3,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 2,
+      "templateId": "atlas-hero-02",
+      "extracted": true,
+      "actualLayout": "hero",
+      "actualIntent": "overview",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 3,
+      "expectedSlots": 3,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 3,
+      "templateId": "atlas-split-01",
+      "extracted": true,
+      "actualLayout": "split",
+      "actualIntent": "comparison",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 5,
+      "expectedSlots": 5,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 4,
+      "templateId": "atlas-split-02",
+      "extracted": true,
+      "actualLayout": "split",
+      "actualIntent": "comparison",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 5,
+      "expectedSlots": 5,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 5,
+      "templateId": "atlas-metrics-01",
+      "extracted": true,
+      "actualLayout": "metric-grid",
+      "actualIntent": "metrics",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 7,
+      "expectedSlots": 7,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 6,
+      "templateId": "atlas-metrics-02",
+      "extracted": true,
+      "actualLayout": "metric-grid",
+      "actualIntent": "metrics",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 7,
+      "expectedSlots": 7,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 7,
+      "templateId": "atlas-steps-01",
+      "extracted": true,
+      "actualLayout": "steps",
+      "actualIntent": "process",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 7,
+      "expectedSlots": 7,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 8,
+      "templateId": "atlas-steps-02",
+      "extracted": true,
+      "actualLayout": "steps",
+      "actualIntent": "process",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 7,
+      "expectedSlots": 7,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 9,
+      "templateId": "atlas-timeline-01",
+      "extracted": true,
+      "actualLayout": "timeline",
+      "actualIntent": "timeline",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 7,
+      "expectedSlots": 7,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 10,
+      "templateId": "atlas-timeline-02",
+      "extracted": true,
+      "actualLayout": "timeline",
+      "actualIntent": "timeline",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 7,
+      "expectedSlots": 7,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 11,
+      "templateId": "atlas-editorial-01",
+      "extracted": true,
+      "actualLayout": "editorial",
+      "actualIntent": "insight",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 2,
+      "expectedSlots": 3,
+      "coordinateMae": 0
+    },
+    {
+      "slideNumber": 12,
+      "templateId": "atlas-editorial-02",
+      "extracted": true,
+      "actualLayout": "editorial",
+      "actualIntent": "insight",
+      "layoutMatch": true,
+      "intentMatch": true,
+      "matchedSlots": 2,
+      "expectedSlots": 3,
+      "coordinateMae": 0
+    }
+  ],
+  "limitations": [
+    "같은 코드가 만든 PPTX를 같은 프로젝트의 추출기가 읽은 합성 왕복 평가입니다.",
+    "외부 제작 PPTX의 표, 차트, 이미지, 마스터와 다양한 글꼴을 대표하지 않습니다.",
+    "실제 문서 정확도는 독립된 외부 PPTX와 사람이 만든 정답으로 별도 평가해야 합니다."
+  ]
+}

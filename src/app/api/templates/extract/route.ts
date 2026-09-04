@@ -1,45 +1,15 @@
-import { randomUUID } from "node:crypto";
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { AppError, invariant } from "@/server/errors";
-import { getDatabase } from "@/server/database";
-import * as repo from "@/server/repository";
+import { NextRequest } from "next/server";
+import { invariant } from "@/server/errors";
+import { json, workspaceRoute } from "@/server/http";
+import { rateLimit } from "@/server/repository";
 import { extractPptxTemplates, PPTX_MAX_BYTES } from "@/server/pptx-import";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 20;
-const COOKIE = "atlas_session";
 
-function checkOrigin(req: NextRequest) {
-  const origin = req.headers.get("origin");
-  const authority = req.headers.get("host");
-  const allowed = new Set(
-    [
-      new URL(req.url).origin,
-      authority ? `${req.nextUrl.protocol}//${authority}` : undefined,
-      process.env.APP_ORIGIN,
-    ].filter(Boolean),
-  );
-  invariant(
-    !origin || allowed.has(origin),
-    403,
-    "ORIGIN_DENIED",
-    "다른 사이트에서 보낸 요청은 허용하지 않습니다.",
-  );
-  invariant(
-    req.headers.get("sec-fetch-site") !== "cross-site",
-    403,
-    "ORIGIN_DENIED",
-    "다른 사이트에서 보낸 요청은 허용하지 않습니다.",
-  );
-}
-
-export async function POST(req: NextRequest) {
-  const requestId = randomUUID();
-  let newToken: string | undefined;
-  try {
-    checkOrigin(req);
+export function POST(req: NextRequest) {
+  return workspaceRoute(req, async (db, workspaceId) => {
     invariant(
       req.headers.get("content-type")?.includes("multipart/form-data"),
       415,
@@ -53,6 +23,7 @@ export async function POST(req: NextRequest) {
       "PPTX_SIZE_LIMIT",
       "PowerPoint 파일은 8MB 이하여야 합니다.",
     );
+    await rateLimit(db, workspaceId, "extract", 12);
     const form = await req.formData();
     const file = form.get("file");
     invariant(
@@ -75,83 +46,11 @@ export async function POST(req: NextRequest) {
       "PPTX_SIZE_LIMIT",
       "PowerPoint 파일은 8MB 이하여야 합니다.",
     );
-    const db = await getDatabase();
-    const resolved = await repo.resolveWorkspace(
-      db,
-      req.cookies.get(COOKIE)?.value,
+    return json(
+      extractPptxTemplates(
+        new Uint8Array(await file.arrayBuffer()),
+        file.name.slice(0, 160),
+      ),
     );
-    newToken = resolved.newToken;
-    await repo.rateLimit(db, resolved.workspaceId, "write", 60);
-    const result = extractPptxTemplates(
-      new Uint8Array(await file.arrayBuffer()),
-      file.name.slice(0, 160),
-    );
-    const response = NextResponse.json(
-      { data: result },
-      {
-        headers: {
-          "Cache-Control": "private, no-store",
-          "X-Request-ID": requestId,
-        },
-      },
-    );
-    if (newToken)
-      response.cookies.set(COOKIE, newToken, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: req.nextUrl.protocol === "https:",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-      });
-    return response;
-  } catch (error) {
-    const status =
-      error instanceof AppError
-        ? error.status
-        : error instanceof z.ZodError
-          ? 422
-          : 500;
-    const code =
-      error instanceof AppError
-        ? error.code
-        : error instanceof z.ZodError
-          ? "VALIDATION"
-          : "INTERNAL_ERROR";
-    const message =
-      error instanceof AppError
-        ? error.message
-        : error instanceof z.ZodError
-          ? error.issues
-              .map((issue) => issue.message)
-              .slice(0, 3)
-              .join(" ")
-          : "PowerPoint 분석 중 문제가 발생했습니다.";
-    if (status === 500)
-      console.error(
-        JSON.stringify({
-          requestId,
-          code,
-          type: error instanceof Error ? error.name : "Unknown",
-        }),
-      );
-    const response = NextResponse.json(
-      { error: { code, message, requestId } },
-      {
-        status,
-        headers: {
-          "Cache-Control": "no-store",
-          "X-Request-ID": requestId,
-        },
-      },
-    );
-    if (newToken)
-      response.cookies.set(COOKIE, newToken, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: req.nextUrl.protocol === "https:",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-      });
-    return response;
-  }
+  });
 }

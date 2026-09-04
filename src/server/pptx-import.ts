@@ -181,19 +181,40 @@ function inferLayout(blocks: TextBlock[]) {
   const lower = blocks.filter((block) => block.y > 0.26);
   const left = lower.filter((block) => block.x + block.w / 2 < 0.48);
   const right = lower.filter((block) => block.x + block.w / 2 > 0.52);
+  const stepMarkers = blocks.filter(
+    (block) =>
+      /^step(?:\s|$)/i.test(block.name) || /^0?[1-9]\d?$/.test(block.text),
+  );
+  const columns = [...new Set(lower.map((block) => Math.round(block.x * 10)))];
+  const pairs = columns
+    .map((column) =>
+      lower
+        .filter((block) => Math.round(block.x * 10) === column)
+        .sort((a, b) => a.y - b.y),
+    )
+    .filter((column) => column.length >= 2);
   let layout: Layout;
-  if (numeric.length >= 2) {
+  if (stepMarkers.length >= 3) {
+    layout = "steps";
+    signals.push(`단계 표식 ${stepMarkers.length}개`);
+  } else if (numeric.length >= 2) {
     layout = "metric-grid";
     signals.push(`숫자형 값 ${numeric.length}개`);
   } else if (timed.length >= 2) {
     layout = "timeline";
     signals.push(`시점 표현 ${timed.length}개`);
   } else if (
-    lower.length >= 4 &&
-    new Set(lower.map((block) => Math.round(block.x * 10))).size >= 3
+    pairs.length >= 3 &&
+    pairs.every((column) => column[0].fontSize < column.at(-1)!.fontSize)
   ) {
+    layout = "timeline";
+    signals.push("시점·마일스톤 반복 구조");
+  } else if (lower.length >= 4 && columns.length >= 3) {
     layout = "steps";
     signals.push("가로 반복 구조");
+  } else if (blocks.length <= 3 && left.length >= 1 && right.length >= 1) {
+    layout = "editorial";
+    signals.push("비대칭 제목·본문 구조");
   } else if (left.length >= 1 && right.length >= 1) {
     layout = "split";
     signals.push("좌우 분할 구조");
@@ -217,7 +238,7 @@ function roleFor(
   if (index === 0 || (block.fontSize >= largest * 0.88 && block.y < 0.4))
     return "title";
   if (numericPattern.test(block.text)) return "value";
-  if (layout === "timeline" && timelinePattern.test(block.text)) return "label";
+  if (layout === "timeline") return block.y < 0.5 ? "label" : "step";
   if (layout === "steps" && block.text.length <= 32) return "step";
   if (block.text.length <= 28 || block.fontSize <= 24) return "label";
   return "body";

@@ -1,0 +1,11 @@
+{
+  "status": "template",
+  "datasetVersion": "replace-with-version",
+  "evaluator": {
+    "name": "replace-with-independent-evaluator",
+    "relationship": "independent-of-implementation",
+    "completedAt": "2026-09-04T00:00:00.000Z"
+  },
+  "protocolVersion": "atlas-holdout-v1",
+  "cases": []
+}

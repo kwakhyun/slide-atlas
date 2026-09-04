@@ -103,7 +103,7 @@ export function tokenize(text: string): string[] {
     ),
   ];
 }
-function inferIntent(text: string): Intent | undefined {
+export function inferIntent(text: string): Intent | undefined {
   const lower = text.toLowerCase();
   const ranked = Object.entries(concepts).map(([intent, words]) => ({
     intent: intent as Intent,

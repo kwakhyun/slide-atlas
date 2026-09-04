@@ -85,9 +85,14 @@ export const EVAL_CASES: EvalCase[] = [
     relevantIds: ["atlas-editorial-01", "atlas-editorial-02"],
   })),
 ];
-export function evaluateSearch(
+export function evaluateCases(
   templates: SlideTemplate[],
-  id = crypto.randomUUID(),
+  cases: EvalCase[],
+  options: {
+    id?: string;
+    name: string;
+    datasetVersion: string;
+  },
 ): Experiment {
   const started = performance.now();
   const approved = templates.filter((t) => t.status === "approved");
@@ -95,7 +100,7 @@ export function evaluateSearch(
     const at = ids.findIndex((id) => relevant.includes(id));
     return at < 0 ? 0 : 1 / (at + 1);
   };
-  const results = EVAL_CASES.map((test) => {
+  const results = cases.map((test) => {
     // Ground-truth intent is deliberately NOT supplied to either retrieval strategy.
     const query = {
       q: test.query,
@@ -129,13 +134,13 @@ export function evaluateSearch(
     .sort()
     .join("|");
   return {
-    id,
-    name: "키워드 검색 vs 구조 기반 검색",
+    id: options.id ?? crypto.randomUUID(),
+    name: options.name,
     createdAt: new Date().toISOString(),
     durationMs: Math.round((performance.now() - started) * 100) / 100,
-    datasetVersion: "atlas-dev-ko-en-v1",
+    datasetVersion: options.datasetVersion,
     catalogVersion,
-    datasetHash: `eval-${stableHash(JSON.stringify(EVAL_CASES))}`,
+    datasetHash: `eval-${stableHash(JSON.stringify(cases))}`,
     catalogHash: `catalog-${stableHash(catalogVersion)}`,
     size: results.length,
     lexical: {
@@ -148,4 +153,15 @@ export function evaluateSearch(
     },
     results,
   };
+}
+
+export function evaluateSearch(
+  templates: SlideTemplate[],
+  id = crypto.randomUUID(),
+): Experiment {
+  return evaluateCases(templates, EVAL_CASES, {
+    id,
+    name: "키워드 검색 vs 구조 기반 검색",
+    datasetVersion: "atlas-dev-ko-en-v1",
+  });
 }

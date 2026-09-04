@@ -30,7 +30,7 @@ import {
   type Intent,
   type TemplateInput,
   type SlideTemplate,
-  type SearchMatch,
+  type SearchPage,
   type TemplateStatus,
 } from "@/lib/domain";
 
@@ -43,7 +43,8 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
   const [sort, setSort] = useState<"relevance" | "updated" | "name">(
     initialIntent ? "relevance" : "updated",
   );
-  const [matches, setMatches] = useState<SearchMatch[] | null>(null);
+  const [matches, setMatches] = useState<SearchPage | null>(null);
+  const [page, setPage] = useState(1);
   const [searching, setSearching] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<{
@@ -57,10 +58,16 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const params = new URLSearchParams({ q, strategy: "structure" });
+        const params = new URLSearchParams({
+          q,
+          strategy: "structure",
+          sort,
+          page: String(page),
+          pageSize: "12",
+        });
         if (intent) params.set("intent", intent);
         if (status) params.set("status", status);
-        const result = await api<SearchMatch[]>(`/templates?${params}`, {
+        const result = await api<SearchPage>(`/templates?${params}`, {
           signal: controller.signal,
         });
         setMatches(result);
@@ -74,10 +81,10 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [q, intent, status, state, notify]);
+  }, [q, intent, status, sort, page, state, notify]);
   if (!state) return <LoadingWorkspace />;
   const filtered = (
-    matches ??
+    matches?.items ??
     state.templates.map((template) => ({
       template,
       score: 0,
@@ -163,14 +170,20 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
           <input
             id="template-query"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
             placeholder="전하고 싶은 내용으로 검색하세요. 예: 분기 매출 성장 지표"
           />
           {q && (
             <button
               className="icon-btn"
               aria-label="검색어 지우기"
-              onClick={() => setQ("")}
+              onClick={() => {
+                setQ("");
+                setPage(1);
+              }}
             >
               <X size={14} />
             </button>
@@ -184,7 +197,10 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
           <select
             id="status-filter"
             value={status}
-            onChange={(e) => setStatus(e.target.value as TemplateStatus | "")}
+            onChange={(e) => {
+              setStatus(e.target.value as TemplateStatus | "");
+              setPage(1);
+            }}
           >
             <option value="">모든 상태</option>
             {STATUSES.map((s) => (
@@ -201,7 +217,10 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
           <select
             id="sort-filter"
             value={sort}
-            onChange={(event) => setSort(event.target.value as typeof sort)}
+            onChange={(event) => {
+              setSort(event.target.value as typeof sort);
+              setPage(1);
+            }}
           >
             <option value="relevance">관련도순</option>
             <option value="updated">최근 수정순</option>
@@ -231,7 +250,10 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
         <button
           className={!intent ? "active" : ""}
           aria-pressed={!intent}
-          onClick={() => setIntent("")}
+          onClick={() => {
+            setIntent("");
+            setPage(1);
+          }}
         >
           전체 <span>{state.templates.length}</span>
         </button>
@@ -240,7 +262,10 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
             key={type}
             className={intent === type ? "active" : ""}
             aria-pressed={intent === type}
-            onClick={() => setIntent(type)}
+            onClick={() => {
+              setIntent(type);
+              setPage(1);
+            }}
           >
             {intentLabels[type]}
             <span>
@@ -257,7 +282,7 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
               구조를 찾고 있어요
             </>
           ) : (
-            <>{filtered.length}개의 템플릿</>
+            <>{matches?.total ?? filtered.length}개의 템플릿</>
           )}
         </span>
         <span>
@@ -277,6 +302,7 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
               setQ("");
               setIntent("");
               setStatus("");
+              setPage(1);
             }}
           >
             필터 초기화
@@ -348,6 +374,27 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
             </button>
           ))}
         </div>
+      )}
+      {matches && matches.total > matches.pageSize && (
+        <nav className="library-pagination" aria-label="템플릿 검색 페이지">
+          <button
+            className="btn small"
+            disabled={matches.page === 1 || searching}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            이전
+          </button>
+          <span>
+            {matches.page} / {Math.ceil(matches.total / matches.pageSize)}
+          </span>
+          <button
+            className="btn small"
+            disabled={!matches.hasNext || searching}
+            onClick={() => setPage((current) => current + 1)}
+          >
+            다음
+          </button>
+        </nav>
       )}
       <div className="library-footnote">
         <Braces size={14} />

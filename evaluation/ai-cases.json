@@ -1,0 +1,150 @@
+{
+  "datasetVersion": "atlas-ai-synthetic-v1",
+  "disclaimer": "직접 작성한 합성 브리프이며 실제 사용자 분포나 독립 품질 평가를 의미하지 않습니다.",
+  "cases": [
+    {
+      "id": "ko-overview-1",
+      "theme": "coral",
+      "count": 3,
+      "brief": "지역 상점의 재고 관리를 돕는 서비스입니다. 복잡한 엑셀 작업을 줄이고 매일 필요한 주문량을 한눈에 보여줍니다."
+    },
+    {
+      "id": "ko-overview-2",
+      "theme": "paper",
+      "count": 3,
+      "brief": "교사가 수업 자료를 빠르게 만들 수 있도록 문서에서 핵심 개념과 확인 문제를 구성하는 도구를 소개합니다."
+    },
+    {
+      "id": "ko-comparison-1",
+      "theme": "forest",
+      "count": 4,
+      "brief": "기존 방식은 요청을 메신저로 모아 누락이 잦습니다. 새로운 방식은 한 화면에서 요청, 담당자, 완료 상태를 관리합니다."
+    },
+    {
+      "id": "ko-comparison-2",
+      "theme": "midnight",
+      "count": 4,
+      "brief": "이전에는 매주 보고서를 수작업으로 합쳤습니다. 개선 후에는 데이터 검증과 요약을 자동화하고 담당자가 예외만 확인합니다."
+    },
+    {
+      "id": "ko-metrics-1",
+      "theme": "midnight",
+      "count": 4,
+      "brief": "실험 결과를 공유합니다. 작업 시간은 42% 줄었고, 누락된 항목은 18개에서 5개로 감소했으며 검수 완료율은 94%입니다."
+    },
+    {
+      "id": "ko-metrics-2",
+      "theme": "paper",
+      "count": 4,
+      "brief": "이번 분기 운영 지표는 신규 템플릿 120개, 재검수 비율 8%, 평균 승인 시간 2.4일입니다. 수치는 내부 합성 예시입니다."
+    },
+    {
+      "id": "ko-process-1",
+      "theme": "coral",
+      "count": 4,
+      "brief": "콘텐츠 운영 절차는 원본 수집 → 구조 추출 → 운영자 검토 → 승인 → 배포 순서입니다. 각 단계의 책임을 분명히 보여주세요."
+    },
+    {
+      "id": "ko-process-2",
+      "theme": "forest",
+      "count": 4,
+      "brief": "신규 고객 온보딩은 목표 확인, 데이터 연결, 첫 결과 검토의 세 단계로 진행합니다. 문제가 있으면 데이터 연결 단계로 돌아갑니다."
+    },
+    {
+      "id": "ko-timeline-1",
+      "theme": "paper",
+      "count": 5,
+      "brief": "출시 계획은 9월 문제 검증, 10월 내부 PoC, 11월 제한 공개, 12월 회고와 다음 투자 결정 순서입니다."
+    },
+    {
+      "id": "ko-timeline-2",
+      "theme": "coral",
+      "count": 5,
+      "brief": "1분기에는 데이터 기준을 정의하고, 2분기에는 검색 실험을 진행하며, 3분기에는 운영 시스템과 연결합니다."
+    },
+    {
+      "id": "ko-insight-1",
+      "theme": "forest",
+      "count": 3,
+      "brief": "고객 인터뷰에서 기능 수보다 결과를 수정할 수 있는 통제감이 중요하다는 점을 배웠습니다. 자동 생성 뒤 검수 흐름이 필요합니다."
+    },
+    {
+      "id": "ko-insight-2",
+      "theme": "midnight",
+      "count": 3,
+      "brief": "검색 실패의 원인은 단어 부족보다 원하는 정보 구조의 차이였습니다. 다음 실험은 표현과 슬롯 수를 함께 사용합니다."
+    },
+    {
+      "id": "en-overview-1",
+      "theme": "paper",
+      "count": 3,
+      "brief": "Introduce a planning workspace that helps small teams turn scattered customer notes into a shared and reviewable product direction."
+    },
+    {
+      "id": "en-overview-2",
+      "theme": "coral",
+      "count": 3,
+      "brief": "Present a service for independent creators that organizes reusable visual structures without taking control away from the editor."
+    },
+    {
+      "id": "en-comparison-1",
+      "theme": "forest",
+      "count": 4,
+      "brief": "Before the change, reviewers compared files in chat. After the change, they see version differences and approval evidence in one workspace."
+    },
+    {
+      "id": "en-comparison-2",
+      "theme": "midnight",
+      "count": 4,
+      "brief": "Compare a manual weekly export with a monitored workflow that preserves source data and asks an operator to resolve only exceptions."
+    },
+    {
+      "id": "en-metrics-1",
+      "theme": "midnight",
+      "count": 4,
+      "brief": "The pilot processed 84 templates, reduced median review time by 31%, and kept required-field completion at 97%. These are synthetic values."
+    },
+    {
+      "id": "en-metrics-2",
+      "theme": "paper",
+      "count": 4,
+      "brief": "Summarize three synthetic indicators: 240 imported slides, 16 rejected candidates, and a 93% schema validation pass rate."
+    },
+    {
+      "id": "en-process-1",
+      "theme": "coral",
+      "count": 4,
+      "brief": "Explain the operating flow: collect a source deck, extract candidates, review the ontology, approve a template, and monitor generated output."
+    },
+    {
+      "id": "en-process-2",
+      "theme": "forest",
+      "count": 4,
+      "brief": "Show a three-step workflow for research intake, evidence review, and a decision meeting, including a return to review when evidence is weak."
+    },
+    {
+      "id": "en-timeline-1",
+      "theme": "paper",
+      "count": 5,
+      "brief": "The roadmap starts with discovery in September, a controlled prototype in October, operator testing in November, and a go or no-go decision in December."
+    },
+    {
+      "id": "en-timeline-2",
+      "theme": "coral",
+      "count": 5,
+      "brief": "In Q1 define quality rules, in Q2 test retrieval, and in Q3 connect the validated workflow to the internal publishing system."
+    },
+    {
+      "id": "en-insight-1",
+      "theme": "forest",
+      "count": 3,
+      "brief": "The strongest research insight was that operators wanted visible reasons for an AI choice, not a larger number of automatically generated options."
+    },
+    {
+      "id": "en-insight-2",
+      "theme": "midnight",
+      "count": 3,
+      "brief": "A failed pilot showed that schema-valid text can still attach the right number to the wrong claim, so semantic review remains necessary."
+    }
+  ]
+}

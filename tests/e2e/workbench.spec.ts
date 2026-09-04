@@ -70,6 +70,15 @@ test("empty search → create template → request review → approve → inspec
   page,
 }) => {
   await page.goto("/library");
+  const pagination = page.getByRole("navigation", {
+    name: "템플릿 검색 페이지",
+  });
+  await expect(pagination).toBeVisible();
+  await expect(page.locator(".template-card")).toHaveCount(12);
+  await pagination.getByRole("button", { name: "다음" }).click();
+  await expect(page.locator(".template-card")).toHaveCount(6);
+  await pagination.getByRole("button", { name: "이전" }).click();
+  await expect(page.locator(".template-card")).toHaveCount(12);
   await page
     .getByRole("textbox", { name: "템플릿 검색", exact: true })
     .fill("zzzznonexistent42");

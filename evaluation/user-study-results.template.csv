@@ -1,0 +1,6 @@
+participant_id,experience,task_id,success_without_help,duration_seconds,error_count,backtrack_count,hint_count,facilitator_intervention,structure_understanding_1_to_5,status_understanding_1_to_5,quality_warning_understanding_1_to_5,observation
+P01,replace_me,1,,,,,,,,,,
+P01,replace_me,2,,,,,,,,,,
+P01,replace_me,3,,,,,,,,,,
+P01,replace_me,4,,,,,,,,,,
+P01,replace_me,5,,,,,,,,,,

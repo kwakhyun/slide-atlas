@@ -13,6 +13,7 @@ import {
   getDeck,
   duplicateDeck,
   deleteDeck,
+  searchTemplates,
 } from "@/server/repository";
 import { SEED_TEMPLATES, EXAMPLE_BRIEF } from "@/lib/catalog";
 import { buildDeterministicDeck } from "@/lib/generate";
@@ -60,6 +61,27 @@ describe("PostgreSQL-backed operations", () => {
     await expect(getDeck(db, b, deck.id)).rejects.toMatchObject({
       status: 404,
     });
+  });
+  it("narrows search candidates in PostgreSQL and paginates ranked results", async () => {
+    const first = await searchTemplates(
+      db,
+      a,
+      { q: "매출 성장 지표", status: "approved", strategy: "structure" },
+      1,
+      1,
+    );
+    expect(first.items).toHaveLength(1);
+    expect(first.items[0].template.intent).toBe("metrics");
+    expect(first.total).toBeGreaterThan(1);
+    expect(first.hasNext).toBe(true);
+    const second = await searchTemplates(
+      db,
+      a,
+      { q: "매출 성장 지표", status: "approved", strategy: "structure" },
+      2,
+      1,
+    );
+    expect(second.items[0].template.id).not.toBe(first.items[0].template.id);
   });
   it("enforces the review state machine and invalidates approval on edit", async () => {
     const created = await insertTemplate(db, a, {

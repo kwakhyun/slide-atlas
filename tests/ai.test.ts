@@ -16,6 +16,7 @@ import {
   SEED_TEMPLATES,
 } from "@/lib/catalog";
 import type { Deck } from "@/lib/domain";
+import { evaluateAiDeck, percentile } from "@/lib/ai-evaluation";
 
 const fixture = (): Deck => ({
   id: "unit-deck",
@@ -42,6 +43,17 @@ const response = (values: Record<string, string>) =>
   });
 
 describe("OpenAI adapter contract (mocked transport; no live API calls)", () => {
+  it("scores automated quality separately from human review", () => {
+    const deck = fixture();
+    const result = evaluateAiDeck(deck, deck, SEED_TEMPLATES);
+    expect(result).toMatchObject({
+      structurePreserved: true,
+      requiredSlotCompleteness: 1,
+      characterLimitPassRate: 1,
+      sourceNumberGuardPassed: true,
+    });
+    expect(percentile([10, 40, 20, 30], 0.95)).toBe(40);
+  });
   it("sends a strict slot schema and retains structure, style and source", async () => {
     const deck = fixture();
     const fetcher = vi

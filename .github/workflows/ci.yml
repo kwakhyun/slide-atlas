@@ -48,6 +48,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run eval -- --check
+      - run: npm run eval:holdout:catalog -- --check
+      - run: npm run eval:ai -- --check
+      - run: npm run eval:pptx -- --check
       - run: npm audit --audit-level=high
       - run: npm run build
       - run: npx playwright install --with-deps chromium
