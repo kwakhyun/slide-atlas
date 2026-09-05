@@ -16,7 +16,7 @@
 npm run eval:ai -- --live --confirm-cost --output docs/ai-evaluation.json
 ```
 
-소규모 연결 점검은 `--limit 2`처럼 제한할 수 있습니다. CI에서는 `npm run eval:ai -- --check`만 실행하며 모델을 호출하지 않습니다. 결과 파일에는 브리프와 생성 본문을 다시 저장하지 않고 케이스 ID, 자동 지표, 토큰과 지연 시간만 기록합니다.
+소규모 연결 점검은 `--limit 2`처럼 제한할 수 있습니다. CI에서는 `npm run eval:ai -- --check`만 실행하며 모델을 호출하지 않습니다. 공개 결과 파일에는 케이스 ID, 자동 지표, 토큰과 지연 시간만 기록합니다. 성공한 결과의 원문, 슬라이드와 사용한 템플릿은 별도의 `.artifacts/ai-evaluation.private.json`에 권한 `0600`으로 저장합니다. `--private-output`으로 경로를 바꿀 수 있으며, 이 파일은 공개하지 않습니다. `--dataset`으로 사람 평가에서 내려받은 재평가 입력을 사용할 수 있습니다.
 
 ## 사람 평가
 
@@ -30,3 +30,7 @@ npm run eval:ai -- --live --confirm-cost --output docs/ai-evaluation.json
 의견이 다르면 근거를 남기고 합의한 최종 판정을 별도 기록합니다. 자동 검사를 통과했더라도 사람 평가 전에는 품질 성공으로 집계하지 않습니다.
 
 [`evaluation/ai-human-review.template.csv`](../evaluation/ai-human-review.template.csv)를 복사해 평가자별 행을 작성합니다. `reviewer_id`에는 임의 코드를 사용하고 각 라이브 결과의 `case_id`마다 두 행이 있어야 합니다. 원문과 생성 결과는 평가 환경에서만 보여 주고 공개 결과 파일에는 다시 저장하지 않습니다.
+
+## 앱에서 평가하기
+
+실험실의 `AI 결과와 편집 품질 검토`에서 저장본 또는 비공개 결과 파일을 사본으로 보관합니다. 등록자를 제외한 두 계정의 판정, 불일치, 소유자의 최종 판단과 실패 사례의 재평가 입력을 관리합니다. 두 계정을 구분하는 기능은 실제 참여자의 독립성을 보장하지 않습니다. 실행 절차와 보관 한도는 [운영 기능 확장](operational-upgrades-2026-09-05.md)에 정리했습니다.

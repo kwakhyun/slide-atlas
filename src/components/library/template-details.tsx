@@ -1,4 +1,5 @@
 "use client";
+import { canEdit } from "@/lib/permissions";
 
 import { TemplateImpactPanel } from "./template-impact-panel";
 import { useState } from "react";
@@ -22,7 +23,7 @@ export function TemplateDetails({
 }) {
   const [tab, setTab] = useState<"schema" | "json">("schema");
   const [guides, setGuides] = useState(true);
-  const { notify } = useWorkspace();
+  const { notify, state } = useWorkspace();
   const densityLabel =
     t.density === "low" ? "낮음" : t.density === "high" ? "높음" : "보통";
   return (
@@ -147,11 +148,19 @@ export function TemplateDetails({
             <ArrowRight size={14} />이 템플릿으로 만들기
           </Link>
         )}
-        <button className="btn" onClick={onCopy}>
+        <button
+          className="btn"
+          disabled={!canEdit(state?.role)}
+          onClick={onCopy}
+        >
           <Copy size={14} />
           복제하여 등록
         </button>
-        <button className="btn dark" onClick={onEdit}>
+        <button
+          className="btn dark"
+          disabled={!canEdit(state?.role)}
+          onClick={onEdit}
+        >
           <Pencil size={14} />
           템플릿 수정
         </button>

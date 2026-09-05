@@ -36,12 +36,13 @@ export function useApiResource<T>(path: string | null) {
     },
     [path, attempt],
   );
+  const retry = useCallback(() => setAttempt((value) => value + 1), []);
   const current = result?.path === path ? result : null;
   return {
     data: current?.data,
     error: current?.error,
     loading: !!path && (!current || current.attempt !== attempt),
-    retry: () => setAttempt((value) => value + 1),
+    retry,
     mutate,
   };
 }

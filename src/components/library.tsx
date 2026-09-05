@@ -1,4 +1,5 @@
 "use client";
+import { canEdit } from "@/lib/permissions";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
@@ -120,11 +121,19 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
         description="이야기에 맞는 템플릿을 찾고, 나만의 내용으로 완성해 보세요."
         actions={
           <>
-            <button className="btn" onClick={() => setImportOpen(true)}>
+            <button
+              className="btn"
+              disabled={!canEdit(state.role)}
+              onClick={() => setImportOpen(true)}
+            >
               <Upload size={15} />
               파일 가져오기
             </button>
-            <button className="btn dark" onClick={() => setEditing({})}>
+            <button
+              className="btn dark"
+              disabled={!canEdit(state.role)}
+              onClick={() => setEditing({})}
+            >
               <Plus size={16} />
               템플릿 등록
             </button>

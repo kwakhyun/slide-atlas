@@ -181,6 +181,15 @@ export interface PptxExtractionCandidate {
   signals: string[];
   warnings: string[];
   source: {
+    blocks?: {
+      name: string;
+      text: string;
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      fontSize: number;
+    }[];
     textBlocks: number;
     decorativeShapes: number;
     originalWidth: number;
@@ -284,6 +293,9 @@ export interface Deck {
   };
 }
 export interface AuditEvent {
+  actorId?: string;
+  actorName?: string;
+  entityVersion?: number;
   id: string;
   entityType: "template" | "deck" | "experiment";
   entityId: string;
@@ -380,6 +392,7 @@ export interface AiUsage {
 }
 export interface WorkspaceState {
   workspaceId: string;
+  accountId?: string;
   accountName?: string;
   role?: "owner" | "editor" | "reviewer" | "viewer";
   templates: SlideTemplate[];

@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import { dirname } from "node:path";
 import { z } from "zod";
 import { SEED_TEMPLATES } from "../src/lib/catalog";
@@ -19,7 +19,7 @@ const datasetSchema = z.object({
         brief: z.string().min(20).max(6000),
       }),
     )
-    .min(20),
+    .min(1),
 });
 
 function argument(name: string) {
@@ -27,7 +27,9 @@ function argument(name: string) {
   return index >= 0 ? process.argv[index + 1] : undefined;
 }
 const dataset = datasetSchema.parse(
-  JSON.parse(await readFile("evaluation/ai-cases.json", "utf8")),
+  JSON.parse(
+    await readFile(argument("--dataset") ?? "evaluation/ai-cases.json", "utf8"),
+  ),
 );
 if (new Set(dataset.cases.map((test) => test.id)).size !== dataset.cases.length)
   throw new Error("AI evaluation case ids must be unique.");
@@ -76,6 +78,8 @@ type CompletedResult = {
 };
 type FailedResult = { id: string; status: "failed"; errorCode: string };
 const results: Array<CompletedResult | FailedResult> = [];
+const privateSnapshots: import("../src/lib/quality-evaluation").EvaluationSnapshot[] =
+  [];
 for (const test of selected) {
   const baseline = buildDeterministicDeck(
     test.brief,
@@ -85,6 +89,18 @@ for (const test of selected) {
   );
   try {
     const generated = await adaptDeckWithOpenAi(baseline, SEED_TEMPLATES);
+    privateSnapshots.push({
+      name: test.id,
+      brief: generated.brief,
+      slides: generated.slides,
+      templates: SEED_TEMPLATES.filter((t) =>
+        generated.slides.some(
+          (s) => s.templateId === t.id && s.templateVersion === t.version,
+        ),
+      ),
+      origin: "live-evaluation",
+      model: generated.generation?.model,
+    });
     results.push({
       id: test.id,
       status: "completed" as const,
@@ -111,6 +127,15 @@ for (const test of selected) {
     });
   }
 }
+const privateOutput =
+  argument("--private-output") ?? ".artifacts/ai-evaluation.private.json";
+await mkdir(dirname(privateOutput), { recursive: true });
+await writeFile(
+  privateOutput,
+  JSON.stringify(privateSnapshots, null, 2) + "\n",
+  { mode: 0o600 },
+);
+await chmod(privateOutput, 0o600);
 const completed = results.filter(
   (result): result is CompletedResult => result.status === "completed",
 );

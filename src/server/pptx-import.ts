@@ -337,6 +337,10 @@ function buildCandidate(
   const warnings: string[] = [];
   const decorativeShapes =
     (xml.match(/<p:sp\b/gi) ?? []).length - blocks.length;
+  if (/<p:grpSp\b/i.test(xml))
+    warnings.push(
+      "그룹 도형의 상위 변환은 적용하지 않았습니다. 원본 위치를 확인해 주세요.",
+    );
   if (/<p:pic\b/i.test(xml))
     warnings.push("이미지는 초안에 포함하지 않았습니다.");
   if (/<p:graphicFrame\b/i.test(xml))
@@ -370,6 +374,7 @@ function buildCandidate(
     signals,
     warnings,
     source: {
+      blocks,
       textBlocks: blocks.length,
       decorativeShapes,
       originalWidth: width,

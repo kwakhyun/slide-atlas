@@ -8,7 +8,7 @@ import {
   updateDeck,
 } from "@/server/repository";
 import { invariant } from "@/server/errors";
-import { templateImpact } from "@/lib/template-impact";
+import { templateImpact, impactCorrectionsSchema } from "@/lib/template-impact";
 import type { Deck } from "@/lib/domain";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
@@ -52,12 +52,13 @@ export function POST(req: NextRequest, context: Context) {
             z.object({
               id: z.string().max(80),
               expectedVersion: z.number().int().positive(),
+              corrections: impactCorrectionsSchema.optional(),
             }),
           )
           .min(1)
           .max(50),
       })
-      .parse(await readJson(req));
+      .parse(await readJson(req, 1_048_576));
     invariant(
       new Set(input.decks.map((d) => d.id)).size === input.decks.length,
       422,
@@ -89,6 +90,7 @@ export function POST(req: NextRequest, context: Context) {
           deck,
           await getDeckTemplates(db, workspaceId, [deck]),
           target,
+          item.corrections,
         );
         invariant(
           !impact.blocked,

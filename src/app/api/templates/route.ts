@@ -35,6 +35,7 @@ export function POST(req: NextRequest) {
         db,
         workspaceId,
         templateInputSchema.parse(await readJson(req)),
+        req.headers.get("x-deduplicate-import") === "1",
       ),
       201,
     ),

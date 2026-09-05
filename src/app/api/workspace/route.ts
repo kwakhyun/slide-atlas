@@ -1,4 +1,4 @@
-import { accountSession } from "@/server/team";
+import { currentActor } from "@/server/actor";
 import { NextRequest } from "next/server";
 import { json, workspaceRoute } from "@/server/http";
 import { getWorkspaceState } from "@/server/repository";
@@ -14,12 +14,9 @@ export function GET(req: NextRequest) {
         workspaceId,
         req.nextUrl.searchParams.get("view") !== "core",
       )),
-      accountName: (
-        await accountSession(db, req.cookies.get("atlas_account")?.value)
-      )?.username,
-      role:
-        (await accountSession(db, req.cookies.get("atlas_account")?.value))
-          ?.role ?? "owner",
+      accountId: currentActor()?.accountId,
+      accountName: currentActor()?.username,
+      role: currentActor()?.role ?? "owner",
     }),
   );
 }

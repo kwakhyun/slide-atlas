@@ -14,12 +14,15 @@ test("brief → editable deck → style replacement → save → PPTX → presen
   await page.getByLabel("프레젠테이션 브리프").fill(brief);
   await page.getByLabel("슬라이드 수").selectOption("3");
   const generated = page.waitForResponse(
-    (r) => r.url().endsWith("/api/decks") && r.request().method() === "POST",
+    (r) =>
+      r.url().endsWith("/api/operations") && r.request().method() === "PATCH",
   );
   await page
     .getByRole("button", { name: "슬라이드 생성", exact: true })
     .click();
-  const created = (await (await generated).json()).data;
+  const operation = (await (await generated).json()).data;
+  expect(operation.status).toBe("completed");
+  const created = operation.items[0].result;
   expect(created.provider).toBe("deterministic");
   expect(created.slides).toHaveLength(3);
   await expect(page.getByLabel("프레젠테이션 선택")).toHaveValue(created.id);

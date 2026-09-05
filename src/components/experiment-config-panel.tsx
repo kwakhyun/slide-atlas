@@ -1,4 +1,5 @@
 "use client";
+import { canEdit } from "@/lib/permissions";
 import { useState } from "react";
 import { EVAL_CASES } from "@/lib/evaluation";
 import {
@@ -113,7 +114,11 @@ export function ExperimentConfigPanel({
           }
         }}
       />
-      <button className="btn" disabled={busy} onClick={() => void save()}>
+      <button
+        className="btn"
+        disabled={busy || !canEdit(state?.role)}
+        onClick={() => void save()}
+      >
         새 설정 사본 저장
       </button>
       {run && (

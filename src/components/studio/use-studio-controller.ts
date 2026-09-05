@@ -12,7 +12,7 @@ import {
 import { mapSourceToTemplate } from "@/lib/generate";
 import { checkSlide } from "@/lib/quality";
 import { remapSlideValues, resolveSlideTemplate } from "@/lib/template-version";
-import { api } from "@/lib/api-client";
+import { startOperation } from "@/lib/operation-client";
 import { useLocalDraft } from "./use-local-draft";
 import { useDeckEditor } from "./use-deck-editor";
 import { createSlideReportCache } from "@/lib/slide-reports";
@@ -267,12 +267,20 @@ export function useStudioController({
     setGenerationStep(0);
     setBusy("generate");
     try {
-      const result = await api<Deck>("/decks", {
-        method: "POST",
-        body: JSON.stringify({ brief, theme, count, provider }),
-        headers:
-          provider === "openai" ? { "X-AI-Access-Code": accessCode } : {},
-      });
+      const job = await startOperation(
+        {
+          id: crypto.randomUUID(),
+          kind: "generate",
+          input: { brief, theme, count, provider },
+        },
+        accessCode,
+      );
+      if (job.status !== "completed")
+        throw new Error(
+          job.items[0].error ??
+            "작업을 완료하지 못했습니다. 작업 진행과 실패 복구에서 확인해 주세요.",
+        );
+      const result = job.items[0].result as Deck;
       const refreshed = await refresh();
       setSelectedId(result.id);
       reset();

@@ -1,6 +1,6 @@
 {
   "date": "2026-09-05",
-  "scope": "final UI/UX review, refreshed screenshots and walkthrough in local production build; no live model calls",
+  "scope": "Role-aware review, actor audit, import deduplication, visual impact correction, PPTX correction, quality review snapshots, embedding search integration and resumable operations; no live model calls",
   "runtime": {
     "node": "22.21.0",
     "platform": "macOS arm64",
@@ -9,45 +9,43 @@
     "buildNode": "24.19.0",
     "browserServerNode": "24.19.0"
   },
-  "unitTests": 95,
-  "e2eTests": 45,
+  "unitTests": 107,
+  "e2eTests": 52,
   "status": "passed",
   "checks": {
-    "unit": "95 passed across 7 files; initialization hook timeout 120000ms",
+    "unit": "107 passed across 8 files, including delayed response cancellation fencing and edited import deduplication",
     "lint": "passed across the project",
     "format": "passed across the project",
     "docs": "local links, JSON and documented test counts checked",
-    "build": "production build and TypeScript passed on Node.js 24.19.0; all 5 migration files included in each of 23 API bundles",
-    "browser": "45 passed in final full suite, including keyboard account login and 768px/1024px editor input, undo and toolbar visibility",
-    "accessibility": "6 routes at 1440px and 390px plus the template dialog; no axe WCAG A/AA violations or horizontal page overflow",
-    "expandedPanels": "passed in the preceding redesign review at 1440px and 390px; these panels were not changed during final polish",
-    "searchEvaluation": "unchanged by UI redesign; see feature-verification-2026-09-05.json for previous check",
-    "holdoutCatalog": "unchanged by UI redesign; see feature-verification-2026-09-05.json for previous check",
-    "aiInputValidation": "unchanged by UI redesign; see feature-verification-2026-09-05.json for previous check",
-    "pptxEvaluation": "unchanged by UI redesign; see feature-verification-2026-09-05.json for previous check",
-    "designQa": "passed; see design-qa.md",
-    "screenshots": "7 current viewport screenshots recaptured and visually inspected; historical audit and live-AI screenshots explicitly labelled",
-    "walkthrough": "updated capture script completed the generation, edit/save, library, review and experiment flow"
+    "build": "production build and TypeScript passed on Node.js 24.19.0; 9 versioned migrations",
+    "browser": "52 E2E scenarios, including separate writer/reviewer accounts, immutable ratings, job resume, PPTX correction and manual impact correction",
+    "accessibility": "6 routes at 1440px and 390px, template dialog, expanded new panels, populated quality snapshots and PPTX extraction; no axe WCAG A/AA violations or horizontal page overflow",
+    "searchEvaluation": "current synthetic evaluation matches saved evidence",
+    "holdoutCatalog": "current exported evaluator catalog matches saved evidence",
+    "aiInputValidation": "24 synthetic cases validated with zero live calls",
+    "pptxEvaluation": "synthetic round-trip evidence matches current implementation",
+    "dependencies": "npm registry audit reports zero vulnerabilities",
+    "screenshots": "11 current screenshots, including 4 populated operational screens; historical AI and audit images retained",
+    "walkthrough": "generation, edit/save, library, review and experiment capture completed on the local production build"
   },
   "externalValidation": {
-    "externalPostgreSQL": "not run",
+    "externalPostgreSQL": "not part of local verification; previous head 7d6d944 passed PostgreSQL 17 CI",
     "independentSearchHoldout": "not collected",
     "userStudy": "not collected",
-    "liveAi": "not run",
-    "publicDeployment": "not performed"
+    "liveAi": "not run for this extension",
+    "publicDeployment": "not part of local verification"
   },
   "environmentNotes": [
-    "Uses the local production server with in-memory PGlite and AI disabled.",
-    "Initial design checks identified low text contrast and a sidebar token overriding mobile width; corrected before the final passing suite.",
-    "The added tablet test was adjusted to use the existing input/preview switch below 800px.",
-    "Final review aligned account input help, browser form validation and keyboard submit; corrected stale guide copy and screenshot/video documentation."
+    "Local production server uses in-memory PGlite with AI disabled.",
+    "Two new control locators and a legacy generation endpoint assertion were aligned with current UI and operation API.",
+    "Populated PPTX contrast, mobile quality snapshot text wrapping and keyboard access to its scroll region were corrected during expanded panel verification.",
+    "Embeddings and delayed model output are mocked in tests. No cost or semantic quality improvement is claimed."
   ],
   "durationsSeconds": {
-    "fullUnitSuite": 5.73,
-    "fullE2eSuite": 30.0
+    "fullUnitSuite": 7.91
   },
   "sourceHashMethod": "SHA256 of sorted repository-relative src file paths, NUL, file bytes, NUL",
-  "previousEditorVerification": "editor-verification-2026-09-05.json",
-  "applicationSourceSha256": "4feaaa013313b76e65bda73eade675abe4703348a6b6025b6fb34adbbd45a1c3",
+  "applicationSourceSha256": "209b27fee14418a2b5a31d61b1c86cbe5790f2b503b5fd49ca0976f1880f93b0",
+  "previousDesignVerification": "design-verification-2026-09-05.json",
   "previousFeatureVerification": "feature-verification-2026-09-05.json"
 }

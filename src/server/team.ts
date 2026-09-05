@@ -42,7 +42,10 @@ export async function accountSession(
 export function canWrite(role: TeamRole, pathname: string, method: string) {
   if (method === "GET" || method === "HEAD") return true;
   if (role === "owner") return true;
-  if (pathname.endsWith("/review")) return role === "reviewer";
+  if (pathname.endsWith("/quality-evaluations") && method === "PATCH")
+    return role === "reviewer";
+  if (pathname.endsWith("/review"))
+    return role === "reviewer" || role === "editor";
   if (pathname.includes("/comments"))
     return role === "editor" || role === "reviewer";
   return role === "editor";

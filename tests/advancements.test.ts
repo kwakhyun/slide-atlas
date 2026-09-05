@@ -212,7 +212,7 @@ describe("account ownership and migrations", () => {
     const { rows } = await db.query<{ name: string; sha256: string }>(
       "SELECT name,sha256 FROM schema_migrations ORDER BY name",
     );
-    expect(rows).toHaveLength(5);
+    expect(rows.map((r) => r.name)).toContain("006_workflow_integrity.sql");
     expect(rows.every((r) => /^[a-f0-9]{64}$/.test(r.sha256))).toBe(true);
   });
   it("separates authenticated ownership from the former anonymous cookie", async () => {
@@ -254,7 +254,7 @@ describe("account ownership and migrations", () => {
     expect(await accountSession(db, account.token)).toBeNull();
   });
   it("enforces editor, reviewer and viewer write boundaries", () => {
-    expect(canWrite("editor", "/api/templates/a/review", "POST")).toBe(false);
+    expect(canWrite("editor", "/api/templates/a/review", "POST")).toBe(true);
     expect(canWrite("reviewer", "/api/templates/a/review", "POST")).toBe(true);
     expect(canWrite("reviewer", "/api/decks/a", "PATCH")).toBe(false);
     expect(canWrite("reviewer", "/api/decks/a/comments", "POST")).toBe(true);

@@ -1,4 +1,5 @@
 "use client";
+import { OperationsPanel } from "./operations-panel";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -223,7 +224,14 @@ function WorkspaceShell({ children }: { children: ReactNode }) {
                 <span className="avatar small">KH</span>
               </div>
             </header>
-            <main id="main-content">{content}</main>
+            <main id="main-content">
+              {content}
+              {state && ["/studio", "/library"].includes(pathname) && (
+                <div className="operations-area">
+                  <OperationsPanel />
+                </div>
+              )}
+            </main>
             <footer className="app-footer">
               <span>
                 SLIDE ATLAS <span className="footer-divider">/</span> 나의

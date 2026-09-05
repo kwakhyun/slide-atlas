@@ -1,4 +1,7 @@
 "use client";
+import { canEdit } from "@/lib/permissions";
+import { SemanticSearchPanel } from "./semantic-search-panel";
+import { QualityEvaluations } from "./quality-evaluations";
 import { ExperimentConfigPanel } from "./experiment-config-panel";
 import { useState } from "react";
 import Link from "next/link";
@@ -208,7 +211,9 @@ export function Experiments() {
         </div>
         <button
           className="btn primary"
-          disabled={busy || resource.loading || !!resource.error}
+          disabled={
+            busy || resource.loading || !!resource.error || !canEdit(state.role)
+          }
           onClick={() => void execute()}
         >
           {busy ? <Loader2 className="spin" size={16} /> : <Play size={16} />}
@@ -270,6 +275,8 @@ export function Experiments() {
           </p>
         </div>
       </div>
+      <QualityEvaluations />
+      <SemanticSearchPanel />
       <ExperimentConfigPanel
         selected={configId}
         onSelect={setConfigId}

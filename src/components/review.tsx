@@ -1,4 +1,5 @@
 "use client";
+import { canEdit, canReview } from "@/lib/permissions";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -241,6 +242,7 @@ export function Review() {
               </div>
               <button
                 className="btn small"
+                disabled={!canEdit(state.role)}
                 onClick={() => setEditing(template)}
               >
                 <Pencil size={13} />
@@ -338,6 +340,16 @@ export function Review() {
                     <Check size={12} /> 자동 검사 오류 0개
                   </span>
                 </div>
+                {!canReview(
+                  state.role,
+                  status === "in_review" ? "approved" : "in_review",
+                ) && (
+                  <p className="field-hint">
+                    {status === "in_review"
+                      ? "승인과 수정 요청은 검수자 또는 소유자가 처리합니다."
+                      : "검수 요청은 작성자 또는 소유자가 보낼 수 있습니다."}
+                  </p>
+                )}
                 <div className="review-decision-actions">
                   <span>
                     <Clock3 size={12} />v{template.version} 기준으로 검수합니다
@@ -346,7 +358,14 @@ export function Review() {
                     <>
                       <button
                         className="btn danger"
-                        disabled={busy || note.trim().length < 5}
+                        disabled={
+                          busy ||
+                          note.trim().length < 5 ||
+                          !canReview(
+                            state.role,
+                            status === "in_review" ? "rejected" : "in_review",
+                          )
+                        }
                         onClick={() => void transition("rejected")}
                       >
                         <X size={15} />
@@ -356,6 +375,7 @@ export function Review() {
                         className="btn green"
                         disabled={
                           busy ||
+                          !canReview(state.role, "approved") ||
                           note.trim().length < 5 ||
                           !validation?.success ||
                           quality.errors > 0
@@ -373,7 +393,11 @@ export function Review() {
                   ) : (
                     <button
                       className="btn dark"
-                      disabled={busy || note.trim().length < 5}
+                      disabled={
+                        busy ||
+                        note.trim().length < 5 ||
+                        !canReview(state.role, "in_review")
+                      }
                       onClick={() => void transition("in_review")}
                     >
                       <Send size={14} />
@@ -464,7 +488,10 @@ export function Review() {
                 <div>
                   <strong>{event.detail}</strong>
                   <span>
-                    {event.action} ·{" "}
+                    {event.actorName ?? "데모 / 이전 기록"}
+                    {event.entityVersion
+                      ? ` · v${event.entityVersion}`
+                      : ""} · {event.action} ·{" "}
                     {new Date(event.createdAt).toLocaleString("ko-KR")}
                   </span>
                 </div>

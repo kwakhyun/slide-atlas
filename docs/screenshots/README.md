@@ -23,8 +23,21 @@ DEMO_BASE_URL=http://127.0.0.1:3107 node --import tsx scripts/capture-screenshot
 DEMO_BASE_URL=http://127.0.0.1:3107 npm run demo:capture
 ```
 
-[스크린샷 스크립트](../../scripts/capture-screenshots.ts)는 위 PNG 7장을 갱신합니다. [데모 녹화 스크립트](../../scripts/capture-demo.ts)는 생성, 편집과 저장, 검색, 검수, 실험의 실제 동작을 촬영합니다. README의 [제품 흐름 영상](../demo/slide-atlas-walkthrough.webm)도 같은 빌드에서 다시 녹화했습니다.
+[스크린샷 스크립트](../../scripts/capture-screenshots.ts)는 기본 PNG 7장을 갱신합니다. [운영 기능 촬영 스크립트](../../scripts/capture-operational-screenshots.ts)는 아래 추가 화면 4장과 데이터가 채워진 패널의 접근성을 검사합니다. [데모 녹화 스크립트](../../scripts/capture-demo.ts)는 생성, 편집과 저장, 검색, 검수, 실험의 실제 동작을 촬영합니다. README의 [제품 흐름 영상](../demo/slide-atlas-walkthrough.webm)도 같은 빌드에서 다시 녹화했습니다.
 
 ## 과거 이미지
 
-[실제 OpenAI 생성 화면](openai-studio.png)은 [당시 AI 검증](../verification.md)에 대응하는 원본입니다. [2026-09-01 감사 보고서의 이미지](../audit/2026-09-01/README.md) 역시 당시 개선 전후를 기록합니다. 이 이미지들은 현재 화면으로 덮어쓰지 않으며 최신 UI 비교에는 위 7장을 사용합니다.
+[실제 OpenAI 생성 화면](openai-studio.png)은 [당시 AI 검증](../verification.md)에 대응하는 원본입니다. [2026-09-01 감사 보고서의 이미지](../audit/2026-09-01/README.md) 역시 당시 개선 전후를 기록합니다. 이 이미지들은 현재 화면으로 덮어쓰지 않으며 최신 UI 비교에는 이 문서의 현재 화면을 사용합니다.
+
+## 운영 기능 화면
+
+같은 규칙 기반 로컬 빌드에서 평가 사본을 선택하고 첫 슬라이드를 펼친 상태, 샘플 PPTX에서 원본 위치 교정을 펼친 상태를 촬영했습니다. 평가 화면은 사람 판정 전의 대기 상태이며 실제 AI 품질 결과가 아닙니다. 데스크톱은 1440 × 1000px, 모바일은 390 × 1000px입니다. 해당 패널로 스크롤한 화면을 담았습니다.
+
+| 기능                | 데스크톱                         | 모바일                                         |
+| ------------------- | -------------------------------- | ---------------------------------------------- |
+| 품질 평가 사본      | [평가 대기](quality-review.png)  | [모바일 평가 대기](quality-review-mobile.png)  |
+| PPTX 원본 위치 교정 | [교정 입력](pptx-correction.png) | [모바일 교정 입력](pptx-correction-mobile.png) |
+
+```sh
+DEMO_BASE_URL=http://127.0.0.1:3107 node --import tsx scripts/capture-operational-screenshots.ts
+```

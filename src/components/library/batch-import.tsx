@@ -1,49 +1,45 @@
 "use client";
 import { useState } from "react";
-import { api } from "@/lib/api-client";
-import {
-  templateInputSchema,
-  type PptxExtractionResult,
-  type SlideTemplate,
-} from "@/lib/domain";
+import { startOperation } from "@/lib/operation-client";
+import { type PptxExtractionResult, type SlideTemplate } from "@/lib/domain";
 import { useWorkspace } from "../workspace-state";
-const fingerprint = (value: unknown) =>
-  JSON.stringify(templateInputSchema.parse(value));
 export function BatchImport({ result }: { result: PptxExtractionResult }) {
-  const { state, commitTemplate } = useWorkspace();
+  const { commitTemplate, notify } = useWorkspace();
   const [selected, setSelected] = useState<number[]>([]);
   const [completed, setCompleted] = useState<number[]>([]);
   const [messages, setMessages] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState(false);
   async function save() {
     setBusy(true);
-    const known = new Set(state?.templates.map(fingerprint));
+    const indices = selected.filter((index) => !completed.includes(index));
     try {
-      for (const index of selected) {
-        if (completed.includes(index)) continue;
-        const template = result.candidates[index].template;
-        const key = fingerprint(template);
-        if (known.has(key)) {
-          setMessages((m) => ({
-            ...m,
-            [index]: "같은 템플릿이 이미 있어 제외했습니다.",
-          }));
-          setCompleted((c) => [...c, index]);
-          continue;
-        }
-        try {
-          const saved = await api<SlideTemplate>("/templates", {
-            method: "POST",
-            body: JSON.stringify(template),
+      await startOperation(
+        {
+          id: crypto.randomUUID(),
+          kind: "import",
+          templates: indices.map((index) => result.candidates[index].template),
+        },
+        "",
+        (job) => {
+          job.items.forEach((item, i) => {
+            const index = indices[i];
+            if (item.status === "completed") {
+              commitTemplate(item.result as SlideTemplate);
+              setCompleted((c) => (c.includes(index) ? c : [...c, index]));
+              setMessages((m) => ({ ...m, [index]: "초안 등록 완료" }));
+            } else if (item.status === "failed")
+              setMessages((m) => ({
+                ...m,
+                [index]: item.error ?? "등록 실패",
+              }));
           });
-          commitTemplate(saved);
-          known.add(key);
-          setCompleted((c) => [...c, index]);
-          setMessages((m) => ({ ...m, [index]: "초안 등록 완료" }));
-        } catch (error) {
-          setMessages((m) => ({ ...m, [index]: (error as Error).message }));
-        }
-      }
+        },
+      );
+    } catch (error) {
+      notify(
+        `${(error as Error).message} 작업 진행과 실패 복구에서 이어서 처리할 수 있습니다.`,
+        true,
+      );
     } finally {
       setBusy(false);
     }

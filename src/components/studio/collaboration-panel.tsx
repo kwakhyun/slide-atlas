@@ -1,4 +1,5 @@
 "use client";
+import { canEdit, canComment } from "@/lib/permissions";
 import { useState } from "react";
 import type { Deck } from "@/lib/domain";
 import { useApiResource } from "../use-api-resource";
@@ -11,7 +12,7 @@ export function CollaborationPanel({
   deck: Deck;
   dirty: boolean;
 }) {
-  const { notify } = useWorkspace();
+  const { notify, state } = useWorkspace();
   const [open, setOpen] = useState(false),
     [body, setBody] = useState(""),
     [link, setLink] = useState(""),
@@ -58,7 +59,7 @@ export function CollaborationPanel({
           <p>{c.body}</p>
           <button
             className="btn small"
-            disabled={busy}
+            disabled={busy || !canComment(state?.role)}
             onClick={() =>
               void write(`/decks/${deck.id}/comments`, "PATCH", {
                 id: c.id,
@@ -73,6 +74,7 @@ export function CollaborationPanel({
       <label htmlFor="review-comment">검수 의견</label>
       <textarea
         id="review-comment"
+        disabled={!canComment(state?.role)}
         rows={3}
         maxLength={2000}
         value={body}
@@ -80,7 +82,7 @@ export function CollaborationPanel({
       />
       <button
         className="btn"
-        disabled={busy || !body.trim()}
+        disabled={busy || !body.trim() || !canComment(state?.role)}
         onClick={() =>
           void write(`/decks/${deck.id}/comments`, "POST", { body })
         }
@@ -106,7 +108,7 @@ export function CollaborationPanel({
       </select>
       <button
         className="btn"
-        disabled={busy || dirty}
+        disabled={busy || dirty || !canEdit(state?.role)}
         onClick={() =>
           void write(`/decks/${deck.id}/shares`, "POST", {
             expectedVersion: deck.version,
@@ -131,7 +133,7 @@ export function CollaborationPanel({
           {s.revoked ? "해제됨" : "해제되지 않음"}
           <button
             className="btn small"
-            disabled={busy || s.revoked}
+            disabled={busy || s.revoked || !canEdit(state?.role)}
             onClick={() =>
               void write(`/decks/${deck.id}/shares`, "DELETE", { id: s.id })
             }

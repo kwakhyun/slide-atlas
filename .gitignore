@@ -20,3 +20,5 @@ next-env.d.ts
 .DS_Store
 
 __pycache__/
+
+*.private.json

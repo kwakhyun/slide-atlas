@@ -1,3 +1,5 @@
+import { canonicalJson } from "@/lib/canonical-json";
+import { currentActor } from "./actor";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import {
   SEED_TEMPLATES,
@@ -39,10 +41,22 @@ export async function appendEvent(
   entityId: string,
   action: string,
   detail: string,
+  entityVersion?: number,
 ) {
+  const actor = currentActor();
   await db.query(
-    "INSERT INTO audit_events (id,workspace_id,entity_type,entity_id,action,detail) VALUES ($1,$2,$3,$4,$5,$6)",
-    [randomUUID(), workspaceId, entityType, entityId, action, detail],
+    "INSERT INTO audit_events (id,workspace_id,entity_type,entity_id,action,detail,actor_id,actor_name,entity_version) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+    [
+      randomUUID(),
+      workspaceId,
+      entityType,
+      entityId,
+      action,
+      detail,
+      actor?.accountId ?? null,
+      actor?.username ?? null,
+      entityVersion ?? null,
+    ],
   );
 }
 async function writeTemplateSnapshot(
@@ -311,6 +325,7 @@ export async function insertTemplate(
   db: Database,
   workspaceId: string,
   input: TemplateInput,
+  deduplicate = false,
 ): Promise<SlideTemplate> {
   const valid = templateInputSchema.parse(input);
   const t: SlideTemplate = {
@@ -320,7 +335,49 @@ export async function insertTemplate(
     status: "draft",
     updatedAt: new Date().toISOString(),
   };
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
+    await tx.query("SELECT id FROM workspaces WHERE id=$1 FOR UPDATE", [
+      workspaceId,
+    ]);
+    const fingerprint = createHash("sha256")
+      .update(canonicalJson(valid))
+      .digest("hex");
+    if (deduplicate) {
+      const prior = await tx.query<{ template_id: string }>(
+        "SELECT template_id FROM template_imports WHERE workspace_id=$1 AND fingerprint=$2",
+        [workspaceId, fingerprint],
+      );
+      if (prior.rows[0]) {
+        const current = await getTemplate(
+          tx,
+          workspaceId,
+          prior.rows[0].template_id,
+          true,
+        );
+        if (
+          canonicalJson(templateInputSchema.parse(current)) ===
+          canonicalJson(valid)
+        )
+          return current;
+        await tx.query(
+          "DELETE FROM template_imports WHERE workspace_id=$1 AND fingerprint=$2",
+          [workspaceId, fingerprint],
+        );
+      }
+      const existing = await listTemplates(tx, workspaceId);
+      const same = existing.find(
+        (candidate) =>
+          canonicalJson(templateInputSchema.parse(candidate)) ===
+          canonicalJson(valid),
+      );
+      if (same) {
+        await tx.query(
+          "INSERT INTO template_imports(workspace_id,fingerprint,template_id) VALUES($1,$2,$3)",
+          [workspaceId, fingerprint, same.id],
+        );
+        return same;
+      }
+    }
     const count = await tx.query<{ count: string }>(
       "SELECT count(*)::text AS count FROM templates WHERE workspace_id=$1",
       [workspaceId],
@@ -345,6 +402,11 @@ export async function insertTemplate(
         JSON.stringify(t),
       ],
     );
+    if (deduplicate)
+      await tx.query(
+        "INSERT INTO template_imports(workspace_id,fingerprint,template_id) VALUES($1,$2,$3)",
+        [workspaceId, fingerprint, t.id],
+      );
     await writeTemplateSnapshot(tx, workspaceId, t);
     await appendEvent(
       tx,
@@ -353,9 +415,10 @@ export async function insertTemplate(
       t.id,
       "template.created",
       `“${t.name}” 초안 등록 · 슬롯 ${t.slots.length}개`,
+      t.version,
     );
+    return t;
   });
-  return t;
 }
 export async function updateTemplate(
   db: Database,
@@ -390,6 +453,7 @@ export async function updateTemplate(
       id,
       "template.updated",
       `“${next.name}” v${current.version} → v${next.version} · 수정 후 재승인 필요`,
+      next.version,
     );
     return next;
   });
@@ -464,6 +528,7 @@ export async function reviewTemplate(
       id,
       `review.${status}`,
       `“${next.name}” · ${note.trim()}`,
+      next.version,
     );
     return next;
   });
@@ -526,6 +591,7 @@ export async function insertDeck(
       deck.id,
       "deck.generated",
       `“${deck.title}” ${deck.slides.length}장 생성 · ${deck.provider === "openai" ? "OpenAI" : "규칙 기반"}`,
+      deck.version,
     );
   });
 }
@@ -591,6 +657,7 @@ export async function updateDeck(
       id,
       "deck.updated",
       `“${next.title}” 내용·스타일 저장 · v${next.version}`,
+      next.version,
     );
     return next;
   });
@@ -637,6 +704,7 @@ export async function duplicateDeck(
       next.id,
       "deck.duplicated",
       `“${current.title}”을 “${next.title}”으로 복제`,
+      next.version,
     );
     return next;
   });
@@ -669,6 +737,7 @@ export async function deleteDeck(
       id,
       "deck.deleted",
       `“${current.title}” 삭제`,
+      current.version,
     );
     return { id };
   });
@@ -708,8 +777,11 @@ export async function listEvents(
     action: string;
     detail: string;
     created_at: Date | string;
+    actor_id: string | null;
+    actor_name: string | null;
+    entity_version: number | null;
   }>(
-    "SELECT id,entity_type,entity_id,action,detail,created_at FROM audit_events WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 100",
+    "SELECT id,entity_type,entity_id,action,detail,created_at,actor_id,actor_name,entity_version FROM audit_events WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 100",
     [workspaceId],
   );
   return rows.map((r) => ({
@@ -718,6 +790,9 @@ export async function listEvents(
     entityId: r.entity_id,
     action: r.action,
     detail: r.detail,
+    actorId: r.actor_id ?? undefined,
+    actorName: r.actor_name ?? undefined,
+    entityVersion: r.entity_version ?? undefined,
     createdAt: new Date(r.created_at).toISOString(),
   }));
 }

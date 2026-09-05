@@ -38,7 +38,7 @@ export async function getAiUsage(db: Database): Promise<AiUsage> {
     resetsAt: resetsAt.toISOString(),
   };
 }
-export async function authorizeAi(db: Database, accessCode: string | null) {
+export function validateAiAccess(accessCode: string | null) {
   invariant(
     isAiConfigured(),
     503,
@@ -53,6 +53,9 @@ export async function authorizeAi(db: Database, accessCode: string | null) {
     "AI_ACCESS_DENIED",
     "AI 실험 초대 코드를 확인해 주세요.",
   );
+}
+export async function authorizeAi(db: Database, accessCode: string | null) {
+  validateAiAccess(accessCode);
   const limit = requestLimit();
   const day = new Date().toISOString().slice(0, 10);
   const result = await db.query<{ calls: number }>(

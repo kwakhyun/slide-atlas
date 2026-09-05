@@ -1,4 +1,5 @@
 import "server-only";
+import { asActor } from "./actor";
 import { accountSession, canWrite } from "./team";
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
@@ -14,7 +15,10 @@ export function json(data: unknown, status = 200) {
   return NextResponse.json({ data }, { status });
 }
 
-export async function readJson(req: NextRequest): Promise<unknown> {
+export async function readJson(
+  req: NextRequest,
+  maxBytes = JSON_MAX_BYTES,
+): Promise<unknown> {
   invariant(
     req.headers.get("content-type")?.includes("application/json"),
     415,
@@ -22,7 +26,7 @@ export async function readJson(req: NextRequest): Promise<unknown> {
     "JSON 요청이 필요합니다.",
   );
   invariant(
-    Number(req.headers.get("content-length") ?? 0) <= JSON_MAX_BYTES,
+    Number(req.headers.get("content-length") ?? 0) <= maxBytes,
     413,
     "BODY_TOO_LARGE",
     "요청 크기가 너무 큽니다.",
@@ -35,7 +39,7 @@ export async function readJson(req: NextRequest): Promise<unknown> {
     const { value, done } = await reader.read();
     if (done) break;
     length += value.length;
-    if (length > JSON_MAX_BYTES) {
+    if (length > maxBytes) {
       await reader.cancel();
       throw new AppError(413, "BODY_TOO_LARGE", "요청 크기가 너무 큽니다.");
     }
@@ -188,7 +192,9 @@ export async function workspaceRoute(
         );
         if (req.method !== "GET")
           await rateLimit(db, account.workspaceId, "write", 60);
-        return handler(db, account.workspaceId, requestId);
+        return asActor(account, () =>
+          handler(db, account.workspaceId, requestId),
+        );
       }
       const resolved = await resolveWorkspace(
         db,
@@ -197,7 +203,9 @@ export async function workspaceRoute(
       newToken = resolved.newToken;
       if (req.method !== "GET")
         await rateLimit(db, resolved.workspaceId, "write", 60);
-      return handler(db, resolved.workspaceId, requestId);
+      return asActor(undefined, () =>
+        handler(db, resolved.workspaceId, requestId),
+      );
     },
     () => newToken,
   );

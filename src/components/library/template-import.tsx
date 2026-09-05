@@ -1,7 +1,8 @@
 "use client";
 
+import { ExtractionCorrection } from "./extraction-correction";
 import { BatchImport } from "./batch-import";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ArrowRight,
   Check,
@@ -28,6 +29,8 @@ export function TemplateImportModal({
   onClose: () => void;
   onImport: (value: TemplateInput) => void;
 }) {
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
   const [tab, setTab] = useState<"pptx" | "json">("pptx");
   const [raw, setRaw] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -38,6 +41,8 @@ export function TemplateImportModal({
 
   async function analyzePptx() {
     if (!file) return;
+    const request = new AbortController();
+    controller.current = request;
     setBusy(true);
     setError("");
     setResult(null);
@@ -49,14 +54,18 @@ export function TemplateImportModal({
       const extraction = await api<PptxExtractionResult>("/templates/extract", {
         method: "POST",
         body: form,
+        signal: request.signal,
       });
+      if (request.signal.aborted) return;
       setResult(extraction);
       setSelected(0);
     } catch (error) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "PowerPoint 분석 중 문제가 발생했습니다.",
+        request.signal.aborted
+          ? "분석을 취소했습니다. 파일을 다시 선택하거나 재시도할 수 있습니다."
+          : error instanceof Error
+            ? error.message
+            : "PowerPoint 분석 중 문제가 발생했습니다.",
       );
     } finally {
       setBusy(false);
@@ -138,6 +147,14 @@ export function TemplateImportModal({
               )}
               {busy ? "구조 분석 중" : "구조 분석"}
             </button>
+            {busy && (
+              <button
+                className="btn"
+                onClick={() => controller.current?.abort()}
+              >
+                분석 취소
+              </button>
+            )}
           </div>
 
           {error && (
@@ -212,7 +229,7 @@ export function TemplateImportModal({
                       <strong>{candidate.template.name}</strong>
                       <small>
                         {layoutLabels[candidate.template.layout]} · 슬롯{" "}
-                        {candidate.template.slots.length}개 · 신뢰도{" "}
+                        {candidate.template.slots.length}개 · 추론 점수{" "}
                         {Math.round(candidate.confidence * 100)}%
                       </small>
                       <div>
@@ -224,6 +241,26 @@ export function TemplateImportModal({
                   </button>
                 ))}
               </div>
+              {result.candidates[selected] && (
+                <ExtractionCorrection
+                  key={selected}
+                  candidate={result.candidates[selected]}
+                  onChange={(template) =>
+                    setResult(
+                      (current) =>
+                        current && {
+                          ...current,
+                          candidates: current.candidates.map(
+                            (candidate, index) =>
+                              index === selected
+                                ? { ...candidate, template }
+                                : candidate,
+                          ),
+                        },
+                    )
+                  }
+                />
+              )}
               {result.candidates[selected]?.warnings.map((warning) => (
                 <p className="field-hint" key={warning}>
                   {warning}

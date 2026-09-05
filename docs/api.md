@@ -76,7 +76,7 @@ OpenAI 생성이 활성화된 환경에서 초대 코드가 없거나 일치하�
 | GET / POST / DELETE | `/decks/:id/shares`     | 공유 목록 / `{expectedVersion, days: 1..7}` 사본 발급 / `{id}` 공유 해제                                  |
 | GET                 | `/shared/:token`        | 유효한 링크의 읽기 전용 사본. 별도 세션 쿠키 발급 없이 응답                                               |
 
-`GET /workspace`와 core 응답에는 `workspaceId`, `role`과 로그인 상태의 `accountName`을 포함합니다. 작업 공간 ID는 식별 용도이며 권한 증명이 아닙니다. 서버는 계정 세션의 유효한 구성원 자격 또는 익명 쿠키를 기준으로 공간을 결정합니다.
+`GET /workspace`와 core 응답에는 `workspaceId`, `role`과 로그인 상태의 `accountId`, `accountName`을 포함합니다. 작업 공간 ID는 식별 용도이며 권한 증명이 아닙니다. 서버는 계정 세션의 유효한 구성원 자격 또는 익명 쿠키를 기준으로 공간을 결정합니다.
 
 계정 등록과 로그인은 `{action, username, password}`를 받습니다. 공간 전환은 `{action: "switch", workspaceId}`, 비밀번호 변경은 `{action: "password", currentPassword, password}`입니다. 비밀번호 변경 시 다른 세션을 종료합니다. 계정 이름은 영문 소문자, 숫자, `_`, `-`로 3–32자이며 비밀번호는 12–128자입니다.
 
@@ -85,3 +85,23 @@ OpenAI 생성이 활성화된 환경에서 초대 코드가 없거나 일치하�
 계정 세션이 만료되거나 구성원 권한이 해제되면 `401 SESSION_EXPIRED`, 역할이 부족하면 `403 ROLE_DENIED`를 반환합니다. 재생성 요청 ID의 입력이 다르면 `409 REQUEST_MISMATCH`, 처리 중이거나 실패한 같은 요청은 `409 REQUEST_PENDING`을 반환합니다. 브랜드 저장 시 대비 조건을 만족하지 않으면 `422 LOW_CONTRAST`입니다.
 
 템플릿 일괄 적용은 항목별 `{id, ok, message}` 배열을 반환합니다. 일부 실패가 있어도 성공한 프레젠테이션의 변경은 유지하며, 실패한 항목은 다시 영향을 확인해야 합니다. 계정별 기능 범위와 데이터 보관 정책은 [기능 고도화 기록](feature-upgrades-2026-09-05.md)을 참고하세요.
+
+## 운영 흐름 확장 API
+
+| 메서드             | 경로                   | 기능                                               |
+| ------------------ | ---------------------- | -------------------------------------------------- |
+| GET / POST / PATCH | `/operations`          | 작업 조회 / 생성 / 계속 처리·취소·재시도·중단 복구 |
+| GET / POST / PATCH | `/quality-evaluations` | 평가 사본 조회 / 보관 / 판정·최종 판단·회귀 등록   |
+| GET / POST         | `/semantic-search`     | 의미 검색 비교 이력 / 임베딩과 기존 검색 비교      |
+
+`POST /operations`는 UUID `id`와 `kind`를 받습니다. `import`는 `templates` 배열, `generate`는 기존 생성 입력을 담은 `input`, `impact`는 `templateId`, `templateVersion`, `{id, expectedVersion, corrections?}`의 `decks` 배열을 받습니다. `PATCH`는 `{id, action}`이며 action은 `run`, `cancel`, `retry`, `recover`입니다. 모델 실행에 필요한 초대 코드는 `X-AI-Access-Code` 헤더로 보내며 작업 데이터에 저장하지 않습니다. 완료된 항목은 재실행하지 않습니다.
+
+기존 `POST /templates`에 `X-Deduplicate-Import: 1`을 보내면 정규화한 같은 입력의 등록을 재사용합니다. 헤더가 없는 복제·등록은 별도 템플릿을 생성합니다. 변경 영향의 `corrections`는 슬라이드 ID별 `{values, reviewedUnmapped}`입니다. 옮기지 못한 원본 슬롯 키를 확인한 목록과 수정값을 보내며, 버전과 품질은 서버에서 다시 검사합니다.
+
+`POST /quality-evaluations`는 `{deckId, expectedVersion}` 또는 검증된 `{snapshot}`을 받습니다. 판정은 `{id, expectedVersion, action: "rate", rating}`, 최종 판단은 `action: "resolve"`와 `decision`, `note`, 회귀 등록은 `action: "regression"`입니다. 사본 등록자는 판정할 수 없고 서로 다른 두 계정의 검수자 또는 소유자만 참여합니다. 판정과 사본에는 원문이 포함되므로 공개 공유 응답에 연결하지 않습니다.
+
+`POST /semantic-search`는 `{query, slots?, relevantIds?}`와 AI 초대 코드 헤더를 받습니다. 승인된 카탈로그를 대상으로 상위 5개와 지연, 토큰, 호출 수를 반환합니다. 정답을 지정했을 때만 Hit@1과 RR@5를 계산하며 독립 성능으로 표시하지 않습니다.
+
+`POST /templates/:id/review`의 `in_review`는 작성자 또는 소유자, `approved`와 `rejected`는 검수자 또는 소유자만 사용할 수 있습니다. 감사 이벤트에는 `actorId`, `actorName`, `entityVersion`을 추가했으며 과거 기록에는 없을 수 있습니다.
+
+작업 입력, 품질 평가 사본과 변경 영향 적용의 JSON 요청은 최대 1MiB입니다. 나머지 JSON API의 기본 제한은 64,000바이트이며 PPTX 업로드는 별도의 8MB 제한을 사용합니다.
