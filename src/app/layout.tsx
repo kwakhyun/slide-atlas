@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     template: "%s · Slide Atlas",
   },
   description:
-    "디자인 온톨로지, 구조 기반 검색, 슬라이드 편집, 품질 검수와 실험을 연결한 프로덕트 엔지니어링 포트폴리오.",
+    "디자인 온톨로지, 구조 기반 검색, 슬라이드 편집, 품질 검수와 실험을 연결한 프레젠테이션 작업 도구.",
   openGraph: {
     title: "Slide Atlas",
     description: "Ideas into structure. A design intelligence workbench.",

@@ -62,7 +62,7 @@ const architecture = read("docs/architecture.md");
 const security = read("SECURITY.md");
 const api = read("docs/api.md");
 const operatorValidation = read("docs/operator-validation.md");
-const readiness = read("docs/portfolio-readiness.md");
+const implementation = read("docs/implementation-status.md");
 const userStudy = read("docs/user-study-protocol.md");
 const evaluation = JSON.parse(read("docs/evaluation.json"));
 const local = JSON.parse(read("docs/local-verification.json"));
@@ -118,7 +118,10 @@ const assertions = [
   ],
   [architecture.includes("후보를 먼저 줄입니다"), "database search candidates"],
   [readme.includes("독립 홀드아웃 절차"), "holdout disclosure"],
-  [readiness.includes("운영 성과와 협업 경험"), "position fit limitation"],
+  [
+    implementation.includes("실제 운영과 팀 사용"),
+    "operational validation scope",
+  ],
   [userStudy.includes("참여자 식별 정보"), "user study privacy"],
   [holdoutCatalog.templates.length === 18, "holdout evaluator catalog"],
 ];

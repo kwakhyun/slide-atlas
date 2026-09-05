@@ -22,10 +22,11 @@
     "presentationNavigation": true,
     "noBrowserErrors": true
   },
-  "screenshot": "screenshots/openai-studio.png",
+  "screenshot": null,
   "limitations": [
     "합성 예시 브리프 1건의 실제 사용자 흐름 검증이며 생성 품질의 일반적인 성능은 측정하지 않았습니다."
   ],
   "deploymentId": "dpl_3fys1z7krvmChTZkpYUMj8pwCed3",
-  "runtimeSourceCommit": "8765decef18168bff86537aadb95ecfdd698198f"
+  "runtimeSourceCommit": "8765decef18168bff86537aadb95ecfdd698198f",
+  "screenshotNote": "Historical screenshot removed from public documentation; recorded verification results are unchanged."
 }

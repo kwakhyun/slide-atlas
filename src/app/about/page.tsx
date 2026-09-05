@@ -14,15 +14,15 @@ export const metadata: Metadata = { title: "프로젝트 가이드" };
 export default function Page() {
   return (
     <div className="page about-page">
-      <div className="eyebrow">PRODUCT ENGINEERING CASE STUDY</div>
+      <div className="eyebrow">PROJECT GUIDE</div>
       <h1>
         결과물을 만드는 AI에서,
         <br />
         품질을 운영하는 제품으로.
       </h1>
       <p className="about-lead">
-        Slide Atlas는 디자인 온톨로지 등록부터 검색, 내용·스타일 대치, 검수와
-        실험까지 연결한 독립 포트폴리오 프로젝트입니다.
+        Slide Atlas는 디자인 온톨로지 등록부터 검색, 내용 편집, 스타일 변경,
+        검수와 실험까지 연결한 프레젠테이션 작업 도구입니다.
       </p>
       <div className="about-actions">
         <Link className="btn primary" href="/studio">
@@ -201,7 +201,7 @@ export default function Page() {
         </div>
       </section>
       <div className="about-signoff">
-        <span>DESIGNED, BUILT & TESTED AS AN INDEPENDENT PORTFOLIO</span>
+        <span>SLIDE ATLAS / DESIGN, EDIT & REVIEW</span>
         <a href="https://github.com/kwakhyun" target="_blank" rel="noreferrer">
           kwakhyun <ArrowUpRight size={14} />
         </a>

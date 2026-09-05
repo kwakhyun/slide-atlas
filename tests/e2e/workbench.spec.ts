@@ -106,7 +106,7 @@ test("empty search → create template → request review → approve → inspec
     .fill("QA 운영 검증 구조");
   await page
     .getByRole("textbox", { name: "사용 목적" })
-    .fill("핵심 메시지와 설명을 담는 포트폴리오 검증용 구조입니다.");
+    .fill("핵심 메시지와 설명을 담는 기능 검증용 구조입니다.");
   await page.getByRole("button", { name: "초안 저장" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("link", { name: "검수 인박스", exact: true }).click();
