@@ -1,3 +1,4 @@
+import { slideTitle } from "./template-version";
 import { type Slide, type SlideTemplate, themeTokens } from "./domain";
 import { wrapText } from "./quality";
 
@@ -68,5 +69,5 @@ export function slideSvg(
       return `${guides}<text data-slot="${escapeXml(slot.key)}" x="${x}" y="${y + slot.fontSize}" fill="${color}" font-size="${slot.fontSize}" font-weight="${weight}" letter-spacing="${slot.role === "label" ? "2" : "-1.3"}">${lines.map((line, i) => `<tspan x="${x}" dy="${i ? slot.fontSize * 1.25 : 0}">${escapeXml(line)}</tspan>`).join("")}</text>`;
     })
     .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="${escapeXml(slide.values.title || template.name)}" style="overflow:hidden;font-family:Arial,'Malgun Gothic','Apple SD Gothic Neo',sans-serif"><title>${escapeXml(slide.values.title || template.name)}</title><rect width="1600" height="900" fill="${t.bg}"/>${shapes}${text}<path d="M104 809h1392" stroke="${t.line}" stroke-width="1"/><text x="104" y="849" fill="${t.muted}" font-size="19" letter-spacing="2">SLIDE ATLAS / IDEAS INTO STRUCTURE</text><text x="1496" y="849" text-anchor="end" fill="${t.muted}" font-size="21">${String(options.slideNumber ?? 1).padStart(2, "0")}</text></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="${escapeXml(slideTitle(slide, template))}" style="overflow:hidden;font-family:Arial,'Malgun Gothic','Apple SD Gothic Neo',sans-serif"><title>${escapeXml(slideTitle(slide, template))}</title><rect width="1600" height="900" fill="${t.bg}"/>${shapes}${text}<path d="M104 809h1392" stroke="${t.line}" stroke-width="1"/><text x="104" y="849" fill="${t.muted}" font-size="19" letter-spacing="2">SLIDE ATLAS / IDEAS INTO STRUCTURE</text><text x="1496" y="849" text-anchor="end" fill="${t.muted}" font-size="21">${String(options.slideNumber ?? 1).padStart(2, "0")}</text></svg>`;
 }

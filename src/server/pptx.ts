@@ -2,6 +2,7 @@ import { strToU8, zipSync } from "fflate";
 import { type Deck, type SlideTemplate, themeTokens } from "@/lib/domain";
 import { escapeXml } from "@/lib/svg";
 import { wrapText } from "@/lib/quality";
+import { resolveSlideTemplate, slideTitle } from "@/lib/template-version";
 
 const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 const A = 'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"';
@@ -130,8 +131,7 @@ export async function exportPptx(
   );
   deck.slides.forEach((slide, index) => {
     const t = themeTokens[slide.theme],
-      template = templates.find((t) => t.id === slide.templateId);
-    if (!template) throw new Error("내보낼 템플릿이 없습니다.");
+      template = resolveSlideTemplate(slide, templates);
     const n = index + 1;
     let id = 2,
       content = "";
@@ -214,7 +214,7 @@ export async function exportPptx(
       );
     add(
       `ppt/slides/slide${n}.xml`,
-      `${XML}<p:sld ${A} ${P} ${R}><p:cSld name="${escapeXml(slide.values.title ?? template.name)}"><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${rgb(t.bg)}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>${GROUP}${content}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`,
+      `${XML}<p:sld ${A} ${P} ${R}><p:cSld name="${escapeXml(slideTitle(slide, template))}"><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${rgb(t.bg)}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>${GROUP}${content}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`,
     );
     add(
       `ppt/slides/_rels/slide${n}.xml.rels`,

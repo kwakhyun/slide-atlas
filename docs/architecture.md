@@ -17,7 +17,7 @@ flowchart LR
   Deck --> SVG[SVG preview / export]
   Deck --> PPTX[Editable OOXML / PPTX]
   SourcePPTX[Uploaded PPTX] --> Extract[Bounded OOXML extraction]
-  Extract --> T
+  Extract --> T[Template draft review]
   API --> E[Fixed evaluation runner]
   E --> R
 ```
@@ -30,7 +30,7 @@ SVG와 PPTX는 같은 슬롯 좌표를 사용합니다. PPTX는 필요한 OOXML 
 
 PPTX 가져오기는 별도 Route Handler에서 처리합니다. 업로드 크기를 8MB로 제한하고 ZIP 중앙 디렉터리의 항목 수, 암호화 여부와 압축 해제 예상 크기를 확인한 뒤 `fflate`로 엽니다. 앞쪽 최대 12장의 텍스트 상자, 좌표와 글자 크기를 읽어 레이아웃, 슬롯 역할과 정보 밀도를 추론하고 동일한 `templateInputSchema`로 다시 검증합니다. 결과는 후보로만 반환하며 운영자가 등록 폼에서 확인하기 전에는 DB에 저장하지 않습니다. 이미지, 표, 차트와 마스터 복원은 이 PoC의 범위에 포함하지 않습니다.
 
-템플릿을 등록·수정·검수할 때마다 `template_versions`에 변경 불가능한 JSONB 사본을 저장하고, 검수 화면에서는 최근 20개 가운데 실제 내용이 달라진 이전 버전과 현재 버전을 비교합니다. 프레젠테이션의 각 슬라이드에도 생성 당시 `templateVersion`을 기록해 최신 버전과 달라졌는지 품질 검사에서 감지합니다. 다만 프레젠테이션이 과거 사본을 외래 키로 직접 참조하지는 않으며, 과거 버전으로 되돌리거나 일괄 재배치하는 기능은 아직 제공하지 않습니다.
+템플릿을 등록·수정·검수할 때마다 `template_versions`에 변경 불가능한 JSONB 사본을 저장하고, 검수 화면에서는 최근 20개 가운데 실제 내용이 달라진 이전 버전과 현재 버전을 비교합니다. 프레젠테이션의 각 슬라이드는 `templateId`와 `templateVersion`으로 생성 당시 사본을 참조합니다. 작업 공간 API는 덱에서 참조한 사본만 `templateVersions`로 반환하며 화면, 썸네일, 발표, 저장 검증과 내보내기는 이 사본을 사용합니다. 저장소는 작업 공간과 버전을 함께 검사하고 없는 버전은 거절합니다. DB 외래 키는 아니며 저장소 계층에서 참조 무결성을 검증합니다. 최신 승인 버전은 사용자가 명시적으로 적용하며 편집 내용을 역할에 맞춰 옮깁니다. 옮기지 못한 내용이 있으면 적용을 중단합니다. 과거 버전 복원과 여러 덱의 일괄 갱신은 아직 제공하지 않습니다.
 
 ## 관계형 DB를 사용하는 이유
 
@@ -70,6 +70,20 @@ AI 연동에는 OpenAI Responses API와 엄격한 JSON Schema를 사용합니다
 
 공개 서비스에는 전용 Neon DB와 `gpt-4.1-mini`를 연결하고 초대 코드 방식의 AI 생성을 활성화했습니다. API 키와 초대 코드는 Vercel Production의 `Secret`으로 관리하며, 미리보기·개발 배포에는 전달하지 않습니다. 실제 연결과 사용 흐름은 [API 검증 기록](live-ai-verification.json)과 [브라우저 검증 기록](live-ai-browser-verification.json)에 남겼습니다. 토큰 수는 API가 반환한 사용량이며 실제 청구 금액은 별도로 검증하지 않았습니다.
 
-원문에 같은 수치가 있는지 확인하는 것만으로 AI의 사실 오류를 막을 수는 없습니다. 수치가 다른 대상에 연결되거나 맥락·단위가 바뀌는 문제, 숫자가 없는 잘못된 주장 등은 사람이 검토해야 합니다. 프롬프트 지시문만으로 안전성을 보장하지 않도록 모델에는 도구 실행, DB 접근, 배포 권한을 부여하지 않았습니다.
+원문에 같은 수치가 있는지 확인하는 것만으로 AI의 사실 오류를 막을 수는 없습니다. 부호와 명시적인 단위의 변형은 검사하지만, 단위 환산이나 수치가 다른 대상에 연결되는 문제, 숫자가 없는 잘못된 주장 등은 사람이 검토해야 합니다. 프롬프트 지시문만으로 안전성을 보장하지 않도록 모델에는 도구 실행, DB 접근, 배포 권한을 부여하지 않았습니다.
 
 구현 시 참고한 공식 문서는 [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [PGlite 파일 시스템](https://pglite.dev/docs/filesystems), [Next.js Route Handlers](https://nextjs.org/docs/app/api-reference/file-conventions/route)입니다.
+
+## 편집 상태와 화면별 데이터 조회
+
+`workspace-state.tsx`가 작업 공간 상태를 관리하고 `workspace.tsx`는 메뉴와 화면 틀을 담당합니다. API 전송과 오류 타입은 `lib/api-client.ts`에 두었습니다. 알림은 별도 Context에서 관리하므로 알림 표시나 닫기 때문에 작업 공간 상태를 구독하는 컴포넌트가 다시 렌더링되지 않습니다. 프로젝트 소개 페이지에서는 작업 공간을 생성하지 않습니다.
+
+Studio는 `studio-input-panel.tsx`와 `studio-stage.tsx`로 나뉩니다. `use-deck-editor.ts`와 순수 reducer인 `deck-history.ts`가 편집 이력과 변경 여부를 관리하고, `use-deck-persistence.ts`는 저장, 덱 관리와 내보내기를 담당합니다. 화면에서 초안과 이력 배열을 직접 변경하지 않고 편집 명령을 호출합니다.
+
+저장 응답의 덱과 버전을 즉시 반영합니다. 저장 뒤 전체 조회가 성공해야 저장 완료로 판단하던 의존성을 제거했습니다. 덱 이름 변경, 복제, 삭제와 템플릿 등록, 수정, 검수도 응답으로 해당 리소스를 갱신합니다. 작업 공간 조회 중 클라이언트에 변경 사항을 반영했다면, 오래된 조회 결과를 적용하지 않고 다시 조회합니다. 새 덱 생성과 충돌 복구에서는 필요한 버전 사본을 포함한 작업 공간을 다시 조회합니다.
+
+화면 초기화는 `/workspace?view=core`를 사용합니다. 검수 이력은 모달을 열 때 `/events`에서, 실험 결과는 실험실 진입 후 `/experiments`에서 가져옵니다. 보조 조회에는 취소 처리, 오류 안내와 재시도를 제공합니다. 기존 `/workspace`의 전체 응답은 API 호환성을 위해 유지합니다.
+
+`slide-reports.ts`는 편집기별 WeakMap에 변경하지 않은 슬라이드의 검사 결과를 보관합니다. 원문이나 해당 버전의 템플릿 사본이 바뀌면 다시 검사합니다. `SlideCanvas`는 같은 슬라이드, 템플릿과 표시 옵션으로 다시 호출될 때 SVG 문자열 생성을 생략합니다.
+
+CSS는 `base`, `pages`, `adjustments` 레이어 순서를 명시하고 화면별 파일에 기본 규칙과 반응형 조정을 함께 두었습니다. 여러 화면의 덮어쓰기를 모았던 `refinements.css`는 제거했습니다. 공통 글자 크기는 `--font-caption`, `--font-label`, `--font-body-small`로 관리합니다.

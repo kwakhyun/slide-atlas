@@ -15,7 +15,8 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { api, LoadingWorkspace, useWorkspace } from "./workspace";
+import { api } from "@/lib/api-client";
+import { LoadingWorkspace, useWorkspace } from "./workspace";
 import { PageHeading, StatusBadge } from "./ui";
 import { SlideCanvas } from "./slide-canvas";
 import { TemplateDetails } from "./library/template-details";

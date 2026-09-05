@@ -2,7 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { Check, Loader2 } from "lucide-react";
-import { api, useWorkspace } from "../workspace";
+import { api } from "@/lib/api-client";
+import { useWorkspace } from "../workspace";
 import { Modal } from "../ui";
 import { SlideCanvas } from "../slide-canvas";
 import {
@@ -29,7 +30,7 @@ export function TemplateForm({
   initial?: TemplateInput;
   onClose: () => void;
 }) {
-  const { refresh, notify } = useWorkspace();
+  const { commitTemplate, notify } = useWorkspace();
   const [value, setValue] = useState<TemplateInput>(() => ({
     ...(template ??
       initial ?? {
@@ -64,15 +65,18 @@ export function TemplateForm({
           .map((t) => t.trim())
           .filter(Boolean),
       });
-      await api(template ? `/templates/${template.id}` : "/templates", {
-        method: template ? "PATCH" : "POST",
-        body: JSON.stringify(
-          template
-            ? { template: input, expectedVersion: template.version }
-            : input,
-        ),
-      });
-      await refresh();
+      const saved = await api<SlideTemplate>(
+        template ? `/templates/${template.id}` : "/templates",
+        {
+          method: template ? "PATCH" : "POST",
+          body: JSON.stringify(
+            template
+              ? { template: input, expectedVersion: template.version }
+              : input,
+          ),
+        },
+      );
+      commitTemplate(saved);
       notify(
         template
           ? "템플릿을 수정했습니다. 초안 상태에서 다시 검수해 주세요."

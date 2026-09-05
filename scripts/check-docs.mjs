@@ -65,6 +65,7 @@ const operatorValidation = read("docs/operator-validation.md");
 const readiness = read("docs/portfolio-readiness.md");
 const userStudy = read("docs/user-study-protocol.md");
 const evaluation = JSON.parse(read("docs/evaluation.json"));
+const local = JSON.parse(read("docs/local-verification.json"));
 const holdoutCatalog = JSON.parse(read("evaluation/holdout-catalog.json"));
 const lexicalHitAt1 = (evaluation.lexical.hitAt1 * 100).toFixed(1);
 const structureHitAt1 = (evaluation.structure.hitAt1 * 100).toFixed(1);
@@ -78,15 +79,24 @@ const searchSummary = `합성 개발 질의 ${evaluation.size}개에서 Hit@1 **
 
 const assertions = [
   [readme.includes(searchSummary), "README search result"],
-  [readme.includes("Vitest **59개**"), "README Vitest count"],
-  [readme.includes("Playwright **25개**"), "README Playwright count"],
-  [brief.includes("테스트 59개"), "brief Vitest count"],
-  [brief.includes("Playwright 시나리오 25개"), "brief Playwright count"],
+  [readme.includes(`Vitest **${local.unitTests}개**`), "README Vitest count"],
   [
-    verification.includes("59개 단위 및 통합 테스트"),
+    readme.includes(`Playwright **${local.e2eTests}개**`),
+    "README Playwright count",
+  ],
+  [brief.includes(`테스트 ${local.unitTests}개`), "brief Vitest count"],
+  [
+    brief.includes(`Playwright 시나리오 ${local.e2eTests}개`),
+    "brief Playwright count",
+  ],
+  [
+    verification.includes(`${local.unitTests}개 단위 및 통합 테스트`),
     "verification Vitest count",
   ],
-  [verification.includes("25개 E2E 시나리오"), "verification Playwright count"],
+  [
+    verification.includes(`${local.e2eTests}개 E2E 시나리오`),
+    "verification Playwright count",
+  ],
   [api.includes("`/templates/extract`"), "PPTX extraction API"],
   [
     operatorValidation.includes("역할 시나리오 5개는 모두 완료"),

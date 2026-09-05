@@ -29,7 +29,10 @@ export function evaluateAiDeck(
   let overflowWarnings = 0;
   let sourceNumberGuardPassed = true;
   for (const slide of generated.slides) {
-    const template = templates.find((item) => item.id === slide.templateId);
+    const template = templates.find(
+      (item) =>
+        item.id === slide.templateId && item.version === slide.templateVersion,
+    );
     if (!template) {
       sourceNumberGuardPassed = false;
       continue;

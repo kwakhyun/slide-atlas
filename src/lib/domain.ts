@@ -321,6 +321,7 @@ export interface AiUsage {
 }
 export interface WorkspaceState {
   templates: SlideTemplate[];
+  templateVersions: SlideTemplate[];
   decks: Deck[];
   events: AuditEvent[];
   experiments: Experiment[];

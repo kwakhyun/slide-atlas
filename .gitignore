@@ -18,3 +18,5 @@ next-env.d.ts
 *.pem
 *.key
 .DS_Store
+
+__pycache__/

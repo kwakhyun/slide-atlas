@@ -2,20 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import type { ReactNode } from "react";
+import { WorkspaceProvider, useWorkspace } from "./workspace-state";
+export { useWorkspace } from "./workspace-state";
+
 import {
   ArrowUpRight,
   Asterisk,
   BookOpen,
-  Check,
   ChevronRight,
   CircleHelp,
   FlaskConical,
@@ -24,128 +18,51 @@ import {
   Loader2,
   ShieldCheck,
   Sparkles,
-  X,
 } from "lucide-react";
-import type { WorkspaceState } from "@/lib/domain";
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly code: string,
-    readonly status: number,
-    readonly requestId?: string,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
-export async function api<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
-  const isFormData =
-    typeof FormData !== "undefined" && options.body instanceof FormData;
-  const response = await fetch(`/api${path}`, {
-    ...options,
-    headers: {
-      ...(options.body && !isFormData
-        ? { "Content-Type": "application/json" }
-        : {}),
-      ...options.headers,
-    },
-    credentials: "same-origin",
-  });
-  const result = await response.json();
-  if (!response.ok)
-    throw new ApiError(
-      result.error?.message ?? "요청을 처리하지 못했습니다.",
-      result.error?.code ?? "UNKNOWN",
-      response.status,
-      result.error?.requestId,
-    );
-  return result.data as T;
-}
-type ContextValue = {
-  state: WorkspaceState | null;
-  loading: boolean;
-  error: string | null;
-  refresh: () => Promise<WorkspaceState>;
-  notify: (message: string, error?: boolean) => void;
-};
-const WorkspaceContext = createContext<ContextValue | null>(null);
-export function useWorkspace() {
-  const value = useContext(WorkspaceContext);
-  if (!value) throw new Error("Workspace provider is required");
-  return value;
+export function Workspace({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  return (
+    <WorkspaceProvider active={pathname !== "/about"}>
+      <WorkspaceShell>{children}</WorkspaceShell>
+    </WorkspaceProvider>
+  );
 }
 
 const navigation = [
   {
     href: "/studio",
     label: "슬라이드 스튜디오",
+    shortLabel: "만들기",
     english: "Studio",
     icon: Sparkles,
   },
   {
     href: "/library",
     label: "온톨로지 라이브러리",
+    shortLabel: "템플릿",
     english: "Library",
     icon: LayoutTemplate,
   },
   {
     href: "/review",
     label: "검수 인박스",
+    shortLabel: "검수",
     english: "Review",
     icon: ShieldCheck,
   },
   {
     href: "/experiments",
     label: "실험실",
+    shortLabel: "실험",
     english: "Experiments",
     icon: FlaskConical,
   },
 ];
 
-export function Workspace({ children }: { children: ReactNode }) {
+function WorkspaceShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [state, setState] = useState<WorkspaceState | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<{
-    message: string;
-    error: boolean;
-  } | null>(null);
-  const pending = useRef<Promise<WorkspaceState> | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const refresh = useCallback(async () => {
-    if (!pending.current) pending.current = api<WorkspaceState>("/workspace");
-    try {
-      const data = await pending.current;
-      setState(data);
-      setError(null);
-      return data;
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "연결하지 못했습니다.");
-      throw error;
-    } finally {
-      pending.current = null;
-      setLoading(false);
-    }
-  }, []);
-  useEffect(() => {
-    void refresh().catch(() => {});
-  }, [refresh]);
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
-  const notify = useCallback((message: string, error = false) => {
-    setToast({ message, error });
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setToast(null), 5500);
-  }, []);
+  const { state, error, refresh } = useWorkspace();
   const current = navigation.find((n) => pathname.startsWith(n.href));
   const content =
     error && !state ? (
@@ -164,9 +81,7 @@ export function Workspace({ children }: { children: ReactNode }) {
       children
     );
   return (
-    <WorkspaceContext.Provider
-      value={{ state, loading, error, refresh, notify }}
-    >
+    <>
       {pathname.startsWith("/present") ? (
         content
       ) : (
@@ -207,7 +122,8 @@ export function Workspace({ children }: { children: ReactNode }) {
                   }
                 >
                   <item.icon size={19} />
-                  <span>{item.label}</span>
+                  <span className="nav-full-label">{item.label}</span>
+                  <span className="nav-short-label">{item.shortLabel}</span>
                   {item.href === "/review" &&
                     !!state?.templates.filter((t) => t.status === "in_review")
                       .length && (
@@ -292,25 +208,15 @@ export function Workspace({ children }: { children: ReactNode }) {
                     ? "Embedded PostgreSQL · 로컬 저장"
                     : state?.storage === "ephemeral"
                       ? "세션 데모 · 서버 재시작 시 초기화"
-                      : "연결 중"}
+                      : pathname === "/about"
+                        ? "프로젝트 가이드"
+                        : "연결 중"}
               </span>
             </footer>
           </div>
         </>
       )}
-      {toast && (
-        <div
-          className={`toast ${toast.error ? "error" : ""}`}
-          role={toast.error ? "alert" : "status"}
-        >
-          {toast.error ? <CircleHelp size={18} /> : <Check size={18} />}
-          <span>{toast.message}</span>
-          <button aria-label="알림 닫기" onClick={() => setToast(null)}>
-            <X size={16} />
-          </button>
-        </div>
-      )}
-    </WorkspaceContext.Provider>
+    </>
   );
 }
 

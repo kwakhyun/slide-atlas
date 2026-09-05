@@ -1,7 +1,8 @@
+import { memo } from "react";
 import { type Slide, type SlideTemplate } from "@/lib/domain";
 import { slideSvg } from "@/lib/svg";
 
-export function SlideCanvas({
+export const SlideCanvas = memo(function SlideCanvas({
   slide,
   template,
   showSlots = false,
@@ -23,4 +24,4 @@ export function SlideCanvas({
       }}
     />
   );
-}
+});

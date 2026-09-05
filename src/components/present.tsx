@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { useWorkspace, LoadingWorkspace } from "./workspace";
 import { SlideCanvas } from "./slide-canvas";
+import { resolveSlideTemplate } from "@/lib/template-version";
 
 export function Present({ id }: { id: string }) {
   const { state } = useWorkspace();
@@ -36,7 +37,7 @@ export function Present({ id }: { id: string }) {
       </div>
     );
   const slide = deck.slides[Math.max(0, index)],
-    template = state.templates.find((t) => t.id === slide.templateId)!;
+    template = resolveSlideTemplate(slide, state.templateVersions);
   return (
     <main className="presentation">
       <header>

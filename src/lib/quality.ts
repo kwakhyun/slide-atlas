@@ -5,6 +5,7 @@ import {
   type SlideTemplate,
   themeTokens,
 } from "./domain";
+import { sourceNumbers, unsupportedNumbers } from "./numbers";
 
 export function charWidth(char: string, fontSize: number): number {
   if (/\s/.test(char)) return fontSize * 0.3;
@@ -51,11 +52,7 @@ export function contrastRatio(fg: string, bg: string): number {
 export function numericTokens(value: string): string[] {
   return [
     ...new Set(
-      (
-        value
-          .normalize("NFKC")
-          .match(/\d[\d,]*(?:\.\d+)?(?:%|배|개|명|원|억|만|년|월|일)?/g) ?? []
-      ).map((n) => n.replace(/,/g, "")),
+      sourceNumbers(value).map((number) => `${number.value}${number.unit}`),
     ),
   ];
 }
@@ -116,11 +113,9 @@ export function checkSlide(
     status: contrast < 4.5 ? "error" : "pass",
     message: `본문·보조·강조 텍스트의 최소 대비 ${contrast.toFixed(2)}:1 (기준 4.5:1).`,
   });
-  const sourceNumbers = numericTokens(source).map((t) =>
-    t.replace(/[^\d.%]/g, ""),
-  );
-  const added = numericTokens(Object.values(slide.values).join(" ")).filter(
-    (t) => !sourceNumbers.includes(t.replace(/[^\d.%]/g, "")),
+  const added = unsupportedNumbers(
+    Object.values(slide.values).join("\n"),
+    source,
   );
   checks.push({
     id: "source-numbers",

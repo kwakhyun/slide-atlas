@@ -1,4 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { unzipSync } from "fflate";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { initializeDatabase, type Database } from "@/server/database";
 import {
   createWorkspace,
@@ -11,12 +12,19 @@ import {
   rateLimit,
   insertDeck,
   getDeck,
+  getDeckTemplates,
+  updateDeck,
   duplicateDeck,
   deleteDeck,
   searchTemplates,
 } from "@/server/repository";
 import { SEED_TEMPLATES, EXAMPLE_BRIEF } from "@/lib/catalog";
-import { buildDeterministicDeck } from "@/lib/generate";
+import { buildDeterministicDeck, mapSourceToTemplate } from "@/lib/generate";
+import { slideSvg } from "@/lib/svg";
+import { exportPptx } from "@/server/pptx";
+import { extractPptxTemplates } from "@/server/pptx-import";
+import { checkSlide } from "@/lib/quality";
+import { resolveSlideTemplate } from "@/lib/template-version";
 
 describe("PostgreSQL-backed operations", () => {
   let db: Database, a: string, b: string;
@@ -33,6 +41,30 @@ describe("PostgreSQL-backed operations", () => {
       await db.query("DELETE FROM workspaces WHERE id=$1 OR id=$2", [a, b]);
     }
     await db.close();
+  });
+  it("omits activity queries from the core bootstrap and keeps event history scoped", async () => {
+    const query = vi.spyOn(db, "query");
+    try {
+      const core = await getWorkspaceState(db, a, false);
+      expect(core.events).toEqual([]);
+      expect(core.experiments).toEqual([]);
+      expect(core.decks.length).toBeGreaterThan(0);
+      expect(
+        query.mock.calls.some(([sql]) =>
+          /FROM (audit_events|experiments)/.test(sql),
+        ),
+      ).toBe(false);
+    } finally {
+      query.mockRestore();
+    }
+    const first = await getWorkspaceState(db, a);
+    const second = await getWorkspaceState(db, b);
+    expect(first.events.length).toBeGreaterThan(0);
+    expect(
+      first.events.some((event) =>
+        second.events.some((other) => other.id === event.id),
+      ),
+    ).toBe(false);
   });
   it("seeds independent visitor workspaces", async () => {
     const state = await getWorkspaceState(db, a);
@@ -196,6 +228,148 @@ describe("PostgreSQL-backed operations", () => {
     await expect(
       deleteDeck(db, workspaceId, original.id),
     ).rejects.toMatchObject({ code: "LAST_DECK" });
+  });
+  it("preserves render, export and save against immutable versions after slots change", async () => {
+    const created = await insertTemplate(db, a, {
+      ...SEED_TEMPLATES[0],
+      name: "Immutable output",
+    });
+    const pending = await reviewTemplate(
+      db,
+      a,
+      created.id,
+      "in_review",
+      1,
+      "구조 검수를 요청합니다.",
+    );
+    const approved = await reviewTemplate(
+      db,
+      a,
+      created.id,
+      "approved",
+      pending.version,
+      "필수 내용과 대비를 확인했습니다.",
+    );
+    const deck = buildDeterministicDeck(EXAMPLE_BRIEF, [approved], "coral", 1);
+    await insertDeck(db, a, deck);
+    const beforeSvg = slideSvg(deck.slides[0], approved);
+    const beforePptx = await exportPptx(deck, [approved]);
+    const edited = await updateTemplate(
+      db,
+      a,
+      approved.id,
+      {
+        ...approved,
+        slots: approved.slots
+          .filter((slot) => slot.key !== "body")
+          .map((slot) => ({ ...slot, x: slot.x + 0.01 })),
+        sampleContent: Object.fromEntries(
+          Object.entries(approved.sampleContent).filter(
+            ([key]) => key !== "body",
+          ),
+        ),
+      },
+      approved.version,
+    );
+    const state = await getWorkspaceState(db, a);
+    expect(
+      state.templates.find((template) => template.id === approved.id)?.version,
+    ).toBe(edited.version);
+    const preserved = resolveSlideTemplate(
+      deck.slides[0],
+      state.templateVersions,
+    );
+    expect(slideSvg(deck.slides[0], preserved)).toBe(beforeSvg);
+    expect(
+      unzipSync(await exportPptx(deck, await getDeckTemplates(db, a, [deck]))),
+    ).toEqual(unzipSync(beforePptx));
+    const saved = await updateDeck(
+      db,
+      a,
+      deck.id,
+      { title: "Still editable", slides: deck.slides },
+      1,
+    );
+    expect(saved.slides[0].templateVersion).toBe(approved.version);
+    expect(
+      (await duplicateDeck(db, a, deck.id)).slides[0].templateVersion,
+    ).toBe(approved.version);
+    await expect(
+      updateDeck(
+        db,
+        a,
+        deck.id,
+        {
+          title: saved.title,
+          slides: [{ ...deck.slides[0], templateVersion: 999 }],
+        },
+        saved.version,
+      ),
+    ).rejects.toMatchObject({ code: "TEMPLATE_VERSION_MISSING" });
+    await expect(
+      updateDeck(
+        db,
+        a,
+        deck.id,
+        {
+          title: saved.title,
+          slides: [{ ...deck.slides[0], templateVersion: edited.version }],
+        },
+        saved.version,
+      ),
+    ).rejects.toMatchObject({ code: "TEMPLATE_NOT_APPROVED" });
+    await expect(getDeckTemplates(db, b, [deck])).rejects.toMatchObject({
+      code: "TEMPLATE_VERSION_MISSING",
+    });
+  });
+  it("imports, approves, generates, edits and exports templates with extracted slot keys", async () => {
+    const source = buildDeterministicDeck(
+      EXAMPLE_BRIEF,
+      SEED_TEMPLATES,
+      "paper",
+      1,
+    );
+    const result = extractPptxTemplates(
+      await exportPptx(source, SEED_TEMPLATES),
+      "custom-source.pptx",
+    );
+    const created = await insertTemplate(db, a, result.candidates[0].template);
+    const pending = await reviewTemplate(
+      db,
+      a,
+      created.id,
+      "in_review",
+      1,
+      "가져온 구조를 검수합니다.",
+    );
+    const approved = await reviewTemplate(
+      db,
+      a,
+      created.id,
+      "approved",
+      pending.version,
+      "좌표, 필수 내용과 대비를 확인했습니다.",
+    );
+    const deck = buildDeterministicDeck(EXAMPLE_BRIEF, [approved], "paper", 1);
+    expect(deck.slides[0].values).toEqual(
+      mapSourceToTemplate(EXAMPLE_BRIEF, approved),
+    );
+    expect(
+      checkSlide(deck.slides[0], approved, EXAMPLE_BRIEF).checks.find(
+        (check) => check.id === "slot-schema",
+      )?.status,
+    ).toBe("pass");
+    const title = approved.slots.find((slot) => slot.role === "title")!;
+    expect(deck.slides[0].values[title.key]).toBeTruthy();
+    await insertDeck(db, a, deck);
+    deck.slides[0].values[title.key] = "가져온 구조에서 수정한 제목";
+    const saved = await updateDeck(db, a, deck.id, deck, 1);
+    expect((await getDeck(db, a, saved.id)).slides[0].values[title.key]).toBe(
+      "가져온 구조에서 수정한 제목",
+    );
+    expect(
+      (await exportPptx(saved, await getDeckTemplates(db, a, [saved]))).length,
+    ).toBeGreaterThan(1000);
   });
   it("rolls back related writes on transaction failure", async () => {
     await expect(

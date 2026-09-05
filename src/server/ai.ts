@@ -1,3 +1,4 @@
+import { resolveSlideTemplate } from "@/lib/template-version";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { type AiUsage, type Deck, type SlideTemplate } from "@/lib/domain";
@@ -77,7 +78,7 @@ export async function adaptDeckWithOpenAi(
   invariant(apiKey, 503, "AI_DISABLED", "AI API 키가 설정되지 않았습니다.");
   const model = options.model ?? process.env.OPENAI_MODEL ?? "gpt-4.1-mini";
   const specification = deck.slides.map((slide, i) => {
-    const template = templates.find((t) => t.id === slide.templateId);
+    const template = resolveSlideTemplate(slide, templates);
     invariant(
       template?.status === "approved",
       422,
@@ -216,7 +217,7 @@ export async function adaptDeckWithOpenAi(
   for (const slide of slides) {
     const quality = checkSlide(
       slide,
-      templates.find((t) => t.id === slide.templateId)!,
+      resolveSlideTemplate(slide, templates),
       deck.brief,
     );
     invariant(

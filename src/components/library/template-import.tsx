@@ -9,7 +9,7 @@ import {
   Loader2,
   TriangleAlert,
 } from "lucide-react";
-import { api } from "../workspace";
+import { api } from "@/lib/api-client";
 import { Modal } from "../ui";
 import { SlideCanvas } from "../slide-canvas";
 import {

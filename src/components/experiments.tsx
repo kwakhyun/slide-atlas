@@ -18,14 +18,16 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { api, LoadingWorkspace, useWorkspace } from "./workspace";
+import { api } from "@/lib/api-client";
+import { LoadingWorkspace, useWorkspace } from "./workspace";
 import { PageHeading } from "./ui";
+import { useApiResource } from "./use-api-resource";
 import { type Experiment } from "@/lib/domain";
 import { EVAL_CASES } from "@/lib/evaluation";
 
 const percent = (value: number) => `${(value * 100).toFixed(1)}%`;
 export function Experiments() {
-  const { state, refresh, notify } = useWorkspace();
+  const { state, notify } = useWorkspace();
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [allCases, setAllCases] = useState(false);
@@ -33,12 +35,13 @@ export function Experiments() {
   const [resultFilter, setResultFilter] = useState<
     "all" | "failed" | "improved" | "declined"
   >("all");
+  const resource = useApiResource<Experiment[]>(state ? "/experiments" : null);
+  const experiments = resource.data ?? [];
   if (!state) return <LoadingWorkspace />;
-  const run =
-    state.experiments.find((e) => e.id === selectedId) ?? state.experiments[0];
+  const run = experiments.find((e) => e.id === selectedId) ?? experiments[0];
   const baseline =
-    state.experiments.find((experiment) => experiment.id === comparisonId) ??
-    state.experiments.find((experiment) => experiment.id !== run?.id);
+    experiments.find((experiment) => experiment.id === comparisonId) ??
+    experiments.find((experiment) => experiment.id !== run?.id);
   const cases = (run?.results ?? []).filter((item) => {
     if (resultFilter === "failed") return !item.structureHit;
     if (resultFilter === "improved")
@@ -56,7 +59,12 @@ export function Experiments() {
     try {
       const previousRunId = run?.id ?? null;
       const result = await api<Experiment>("/experiments", { method: "POST" });
-      await refresh();
+      resource.mutate((current) =>
+        [
+          result,
+          ...(current ?? []).filter((item) => item.id !== result.id),
+        ].slice(0, 20),
+      );
       setSelectedId(result.id);
       setComparisonId(previousRunId);
       notify(`${result.size}개 질의의 검색 비교 실험을 저장했습니다.`);
@@ -115,6 +123,15 @@ export function Experiments() {
   }
   return (
     <div className="page experiments-page">
+      {resource.loading && <p role="status">실험 결과를 불러오는 중입니다.</p>}
+      {resource.error && (
+        <div role="alert">
+          <p>{resource.error}</p>
+          <button className="btn" onClick={resource.retry}>
+            다시 불러오기
+          </button>
+        </div>
+      )}
       <PageHeading
         eyebrow="LESS GUESSWORK. MORE EVIDENCE."
         title="좋아졌다는 말 대신, 실험으로."
@@ -186,7 +203,7 @@ export function Experiments() {
         </div>
         <button
           className="btn primary"
-          disabled={busy}
+          disabled={busy || resource.loading || !!resource.error}
           onClick={() => void execute()}
         >
           {busy ? <Loader2 className="spin" size={16} /> : <Play size={16} />}
@@ -257,7 +274,7 @@ export function Experiments() {
             </h2>
             <p>잘 찾은 경우와 놓친 경우를 함께 확인하세요.</p>
           </div>
-          {state.experiments.length > 0 && run && (
+          {experiments.length > 0 && run && (
             <div className="experiment-controls">
               <label className="sr-only" htmlFor="experiment-history">
                 실험 기록 선택
@@ -267,7 +284,7 @@ export function Experiments() {
                 value={run.id}
                 onChange={(e) => setSelectedId(e.target.value)}
               >
-                {state.experiments.map((r, i) => (
+                {experiments.map((r, i) => (
                   <option key={r.id} value={r.id}>
                     {i === 0 ? "최근 실행" : `이전 실행 ${i}`} ·{" "}
                     {new Date(r.createdAt).toLocaleTimeString("ko-KR", {
@@ -285,17 +302,17 @@ export function Experiments() {
                 id="experiment-baseline"
                 aria-label="비교 기준 실행"
                 value={baseline?.id ?? ""}
-                disabled={state.experiments.length < 2}
+                disabled={experiments.length < 2}
                 onChange={(event) => setComparisonId(event.target.value)}
               >
-                {state.experiments
+                {experiments
                   .filter((experiment) => experiment.id !== run.id)
                   .map((experiment, index) => (
                     <option key={experiment.id} value={experiment.id}>
                       비교 {index + 1} · {formatRunTime(experiment.createdAt)}
                     </option>
                   ))}
-                {state.experiments.length < 2 && (
+                {experiments.length < 2 && (
                   <option value="">비교할 실행 없음</option>
                 )}
               </select>

@@ -17,6 +17,10 @@ import {
 } from "lucide-react";
 import { SlideCanvas } from "./slide-canvas";
 import {
+  resolveSlideTemplate,
+  templateVersionKey,
+} from "@/lib/template-version";
+import {
   intentLabels,
   type Deck,
   type QualityReport,
@@ -94,9 +98,7 @@ export function StudioOnboarding({
   return (
     <section className="onboarding-card" aria-label="3분 체험 안내">
       <div>
-        <span className="mini-label">처음 오셨나요?</span>
-        <h2>세 단계로 핵심 흐름을 확인해 보세요.</h2>
-        <p>예시 브리프부터 검색 실험까지 약 3분이면 충분합니다.</p>
+        <h2>처음이라면 예시로 시작하세요.</h2>
       </div>
       <ol>
         <li>
@@ -185,9 +187,7 @@ export function SlideFilmstrip({
   return (
     <div className="filmstrip" ref={filmstripRef}>
       {deck.slides.map((slide, index) => {
-        const template = templates.find(
-          (item) => item.id === slide.templateId,
-        )!;
+        const template = resolveSlideTemplate(slide, templates);
         return (
           <button
             key={slide.id}
@@ -226,10 +226,12 @@ export function SlideFilmstrip({
 export function StructureBar({
   template,
   approved,
+  newerTemplate,
   onChange,
 }: {
   template: SlideTemplate;
   approved: SlideTemplate[];
+  newerTemplate?: SlideTemplate;
   onChange: (template: SlideTemplate) => void;
 }) {
   return (
@@ -248,23 +250,32 @@ export function StructureBar({
         </p>
       </div>
       <div className="structure-select">
+        {newerTemplate && (
+          <button className="btn small" onClick={() => onChange(newerTemplate)}>
+            승인된 v{newerTemplate.version} 적용
+          </button>
+        )}
         <label htmlFor="template-select">템플릿 바꾸기</label>
         <select
           id="template-select"
-          value={template.id}
+          value={templateVersionKey(template)}
           onChange={(event) => {
             const target = approved.find(
-              (item) => item.id === event.target.value,
+              (item) => templateVersionKey(item) === event.target.value,
             );
             if (target) onChange(target);
           }}
         >
-          {!approved.some((item) => item.id === template.id) && (
-            <option value={template.id}>{template.name} (검수 필요)</option>
+          {!approved.some(
+            (item) => templateVersionKey(item) === templateVersionKey(template),
+          ) && (
+            <option value={templateVersionKey(template)}>
+              {template.name} · 보존된 v{template.version}
+            </option>
           )}
           {approved.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name} · {intentLabels[item.intent]}
+            <option key={item.id} value={templateVersionKey(item)}>
+              {item.name} · v{item.version} · {intentLabels[item.intent]}
             </option>
           ))}
         </select>

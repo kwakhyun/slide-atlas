@@ -7,7 +7,7 @@ import "./styles/presentation.css";
 import "./styles/workflow.css";
 import "./styles/experiments.css";
 import "./styles/about.css";
-import "./styles/refinements.css";
+import "./styles/studio.css";
 
 export const metadata: Metadata = {
   title: {

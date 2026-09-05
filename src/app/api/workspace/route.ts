@@ -7,6 +7,12 @@ export const dynamic = "force-dynamic";
 
 export function GET(req: NextRequest) {
   return workspaceRoute(req, async (db, workspaceId) =>
-    json(await getWorkspaceState(db, workspaceId)),
+    json(
+      await getWorkspaceState(
+        db,
+        workspaceId,
+        req.nextUrl.searchParams.get("view") !== "core",
+      ),
+    ),
   );
 }

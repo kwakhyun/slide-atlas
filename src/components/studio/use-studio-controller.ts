@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { EXAMPLE_BRIEF } from "@/lib/catalog";
 import {
   type Deck,
@@ -12,7 +11,11 @@ import {
 } from "@/lib/domain";
 import { mapSourceToTemplate } from "@/lib/generate";
 import { checkSlide } from "@/lib/quality";
-import { ApiError, api } from "../workspace";
+import { remapSlideValues, resolveSlideTemplate } from "@/lib/template-version";
+import { api } from "@/lib/api-client";
+import { useDeckEditor } from "./use-deck-editor";
+import { createSlideReportCache } from "@/lib/slide-reports";
+import { useDeckPersistence } from "./use-deck-persistence";
 import { useUnsavedWarning } from "../use-unsaved-warning";
 
 interface Options {
@@ -28,11 +31,7 @@ export function useStudioController({
   refresh,
   notify,
 }: Options) {
-  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Deck | null>(null);
-  const [history, setHistory] = useState<Deck[]>([]);
-  const [future, setFuture] = useState<Deck[]>([]);
   const [index, setIndex] = useState(0);
   const [brief, setBrief] = useState(EXAMPLE_BRIEF);
   const [theme, setTheme] = useState<ThemeId>("coral");
@@ -56,13 +55,59 @@ export function useStudioController({
   const [mobileView, setMobileView] = useState<"preview" | "input">("preview");
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [generationStep, setGenerationStep] = useState(0);
+  const selected =
+    state.decks.find((item) => item.id === selectedId) ?? state.decks[0];
+  const editor = useDeckEditor(selected, !!busy);
+  const {
+    deck,
+    dirty,
+    update,
+    undo,
+    redo,
+    reset,
+    endGroup,
+    canUndo,
+    canRedo,
+    start,
+  } = editor;
+  const slideIndex = Math.min(index, deck.slides.length - 1);
+  const {
+    save,
+    download,
+    duplicateCurrentDeck,
+    renameCurrentDeck,
+    deleteCurrentDeck,
+    downloadRecoveryDraft,
+    present,
+  } = useDeckPersistence({
+    deck,
+    dirty,
+    slideIndex,
+    state,
+    reset,
+    setBusy,
+    notify,
+    setConflictOpen,
+    setSelectedId,
+    setIndex,
+    setDeckMenuOpen,
+    setDeckDialog,
+    renameTitle,
+    setExportOpen,
+  });
+  const reportCache = useMemo(() => createSlideReportCache(), []);
   const appliedTemplate = useRef<string | null>(null);
   const filmstripRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      if (localStorage.getItem("slide-atlas-onboarding-v1") !== "done")
+      try {
+        setOnboardingOpen(
+          localStorage.getItem("slide-atlas-onboarding-v1") !== "done",
+        );
+      } catch {
         setOnboardingOpen(true);
+      }
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
@@ -76,13 +121,16 @@ export function useStudioController({
     };
   }, [busy]);
   useEffect(() => {
-    const active = filmstripRef.current?.querySelector<HTMLElement>(
-      '[aria-pressed="true"]',
-    );
-    active?.scrollIntoView({
+    const strip = filmstripRef.current;
+    const active = strip?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!strip || !active) return;
+    strip.scrollTo({
+      left:
+        strip.scrollLeft +
+        active.getBoundingClientRect().left -
+        strip.getBoundingClientRect().left -
+        (strip.clientWidth - active.clientWidth) / 2,
       behavior: "smooth",
-      block: "nearest",
-      inline: "center",
     });
   }, [index]);
   useEffect(() => {
@@ -100,7 +148,7 @@ export function useStudioController({
     const frame = window.requestAnimationFrame(() => {
       appliedTemplate.current = initialTemplateId;
       setSelectedId(base.id);
-      setDraft({
+      start(base, {
         ...base,
         slides: base.slides.map((item, itemIndex) =>
           itemIndex === 0
@@ -113,42 +161,53 @@ export function useStudioController({
             : item,
         ),
       });
-      setHistory([base]);
-      setFuture([]);
+
       setIndex(0);
       setTab("content");
       notify(`“${target.name}” 템플릿을 첫 슬라이드에 적용했습니다.`);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [initialTemplateId, notify, state]);
-  useUnsavedWarning(!!draft);
+  }, [initialTemplateId, notify, state, start]);
+  useUnsavedWarning(dirty);
 
-  const selected =
-    state.decks.find((deck) => deck.id === selectedId) ?? state.decks[0];
-  if (!selected) throw new Error("프레젠테이션 초기 데이터가 없습니다.");
-  const deck = draft?.id === selected.id ? draft : selected;
-  const slideIndex = Math.min(index, deck.slides.length - 1);
   const slide = deck.slides[slideIndex];
-  const template = state.templates.find((item) => item.id === slide.templateId);
-  if (!template) throw new Error("슬라이드 템플릿을 찾을 수 없습니다.");
-  const quality = checkSlide(slide, template, deck.brief);
-  const dirty = draft?.id === selected.id;
-  const approved = state.templates.filter((item) => item.status === "approved");
+  const renderTemplates = useMemo(
+    () => [...state.templateVersions, ...state.templates],
+    [state.templateVersions, state.templates],
+  );
+  const template = resolveSlideTemplate(slide, renderTemplates);
+  const newerTemplate = state.templates.find(
+    (item) =>
+      item.id === template.id &&
+      item.version > template.version &&
+      item.status === "approved",
+  );
+  const slideReports = useMemo(
+    () => reportCache(deck, renderTemplates),
+    [reportCache, deck, renderTemplates],
+  );
+  const quality = slideReports[slideIndex];
+  const needsReview = slideReports.flatMap((report, index) =>
+    report.errors || report.warnings ? [index] : [],
+  );
+  const approved = useMemo(
+    () => state.templates.filter((item) => item.status === "approved"),
+    [state.templates],
+  );
 
-  function update(next: Deck) {
-    setHistory((items) => [...items.slice(-19), deck]);
-    setFuture([]);
-    setDraft(next);
-  }
-  function updateSlide(patch: Partial<Slide>) {
-    update({
-      ...deck,
-      slides: deck.slides.map((item, itemIndex) =>
-        itemIndex === slideIndex ? { ...item, ...patch } : item,
-      ),
-    });
+  function updateSlide(patch: Partial<Slide>, key?: string) {
+    update(
+      {
+        ...deck,
+        slides: deck.slides.map((item, itemIndex) =>
+          itemIndex === slideIndex ? { ...item, ...patch } : item,
+        ),
+      },
+      key,
+    );
   }
   function applyTheme(value: ThemeId) {
+    if (busy) return;
     setTheme(value);
     update({
       ...deck,
@@ -158,33 +217,6 @@ export function useStudioController({
           : item,
       ),
     });
-  }
-  async function save(): Promise<Deck> {
-    if (!dirty) return deck;
-    setBusy("save");
-    try {
-      const saved = await api<Deck>(`/decks/${deck.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          title: deck.title,
-          slides: deck.slides,
-          expectedVersion: deck.version,
-        }),
-      });
-      await refresh();
-      setDraft(null);
-      setHistory([]);
-      setFuture([]);
-      notify("내용과 스타일을 저장했습니다.");
-      return saved;
-    } catch (error) {
-      if (error instanceof ApiError && error.code === "VERSION_CONFLICT")
-        setConflictOpen(true);
-      notify((error as Error).message, true);
-      throw error;
-    } finally {
-      setBusy(null);
-    }
   }
   async function generate() {
     if (dirty) {
@@ -200,40 +232,29 @@ export function useStudioController({
         headers:
           provider === "openai" ? { "X-AI-Access-Code": accessCode } : {},
       });
-      await refresh();
+      const refreshed = await refresh();
       setSelectedId(result.id);
-      setDraft(null);
+      reset();
       setIndex(0);
-      setHistory([]);
-      setFuture([]);
+
+      completeOnboarding();
+      setTab("content");
+      setMobileView("input");
+      const reports = result.slides.map((item) =>
+        checkSlide(
+          item,
+          resolveSlideTemplate(item, refreshed.templateVersions),
+          result.brief,
+        ),
+      );
+      const firstIssue = reports.findIndex(
+        (report) => report.errors || report.warnings,
+      );
+      setIndex(firstIssue < 0 ? 0 : firstIssue);
+      setQualityOpen(firstIssue >= 0);
       notify(
         `${result.slides.length}장의 슬라이드를 만들었습니다. 품질 검사를 확인해 주세요.`,
       );
-    } catch (error) {
-      notify((error as Error).message, true);
-    } finally {
-      setBusy(null);
-    }
-  }
-  async function download(format: "pptx" | "svg" | "json") {
-    setExportOpen(false);
-    try {
-      await save();
-      setBusy("export");
-      const response = await fetch(
-        `/api/decks/${deck.id}/export?format=${format}&slide=${slideIndex}`,
-      );
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error?.message ?? "내보내기에 실패했습니다.");
-      }
-      const url = URL.createObjectURL(await response.blob());
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `slide-atlas${format === "svg" ? `-${slideIndex + 1}` : ""}.${format}`;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      notify(`${format.toUpperCase()} 파일을 내보냈습니다.`);
     } catch (error) {
       notify((error as Error).message, true);
     } finally {
@@ -256,107 +277,75 @@ export function useStudioController({
     });
     setIndex(Math.max(0, slideIndex - 1));
   }
-  function undo() {
-    const previous = history.at(-1);
-    if (!previous) return;
-    setFuture((items) => [...items.slice(-19), deck]);
-    setDraft(previous);
-    setHistory((items) => items.slice(0, -1));
-  }
-  function redo() {
-    const next = future.at(-1);
-    if (!next) return;
-    setHistory((items) => [...items.slice(-19), deck]);
-    setDraft(next);
-    setFuture((items) => items.slice(0, -1));
-  }
-  async function duplicateCurrentDeck() {
-    setDeckMenuOpen(false);
-    setBusy("duplicate");
-    try {
-      const copy = await api<Deck>(`/decks/${deck.id}/duplicate`, {
-        method: "POST",
-      });
-      await refresh();
-      setSelectedId(copy.id);
-      setDraft(null);
-      setHistory([]);
-      setFuture([]);
-      setIndex(0);
-      notify("프레젠테이션 복사본을 만들었습니다.");
-    } catch (error) {
-      notify((error as Error).message, true);
-    } finally {
-      setBusy(null);
-    }
-  }
-  async function renameCurrentDeck() {
-    const title = renameTitle.trim();
-    if (!title) return;
-    setBusy("rename");
-    try {
-      const saved = await api<Deck>(`/decks/${deck.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          title,
-          slides: deck.slides,
-          expectedVersion: deck.version,
-        }),
-      });
-      await refresh();
-      setSelectedId(saved.id);
-      setDraft(null);
-      setHistory([]);
-      setFuture([]);
-      setDeckDialog(null);
-      notify("프레젠테이션 이름을 변경했습니다.");
-    } catch (error) {
-      if (error instanceof ApiError && error.code === "VERSION_CONFLICT")
-        setConflictOpen(true);
-      notify((error as Error).message, true);
-    } finally {
-      setBusy(null);
-    }
-  }
-  async function deleteCurrentDeck() {
-    setBusy("delete");
-    try {
-      await api(`/decks/${deck.id}`, { method: "DELETE" });
-      const next = await refresh();
-      setSelectedId(next.decks[0]?.id ?? null);
-      setDraft(null);
-      setHistory([]);
-      setFuture([]);
-      setIndex(0);
-      setDeckDialog(null);
-      notify("프레젠테이션을 삭제했습니다.");
-    } catch (error) {
-      notify((error as Error).message, true);
-    } finally {
-      setBusy(null);
-    }
-  }
-  function downloadRecoveryDraft() {
-    const url = URL.createObjectURL(
-      new Blob([JSON.stringify(deck, null, 2)], { type: "application/json" }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `slide-atlas-recovery-${deck.id}.json`;
-    link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-  async function present() {
-    await save();
-    router.push(`/present/${deck.id}`);
-  }
   function selectTemplate(target: SlideTemplate) {
+    if (busy) return;
+    const mapped = remapSlideValues(slide, template, target);
+    if (mapped.unmapped.length) {
+      notify(
+        `새 구조에 옮길 수 없는 내용이 있어 변경하지 않았습니다: ${mapped.unmapped.map((slot) => slot.label).join(", ")}. 현재 내용을 먼저 보관하거나 정리해 주세요.`,
+        true,
+      );
+      return;
+    }
     updateSlide({
       templateId: target.id,
       templateVersion: target.version,
-      values: mapSourceToTemplate(deck.brief, target),
+      values: mapped.values,
     });
-    notify("내용을 새 템플릿 슬롯에 다시 배치했습니다.");
+    setQualityOpen(true);
+    notify(
+      "편집한 내용을 유지해 새 템플릿에 배치했습니다. 빈 영역과 넘침을 확인해 주세요.",
+    );
+  }
+
+  function completeOnboarding() {
+    try {
+      localStorage.setItem("slide-atlas-onboarding-v1", "done");
+    } catch {
+      /* Storage is optional. */
+    }
+    setOnboardingOpen(false);
+  }
+
+  function selectDeck(id: string) {
+    if (busy || dirty) return;
+    setSelectedId(id);
+    setIndex(0);
+    reset();
+  }
+  function duplicateSlide() {
+    if (busy || deck.slides.length >= 12) return;
+    update({
+      ...deck,
+      slides: [
+        ...deck.slides,
+        { ...slide, id: crypto.randomUUID(), values: { ...slide.values } },
+      ],
+    });
+    setIndex(deck.slides.length);
+  }
+  async function reloadDeck() {
+    try {
+      await refresh();
+      reset();
+      setConflictOpen(false);
+      notify("서버의 최신 버전을 불러왔습니다.");
+    } catch (error) {
+      notify((error as Error).message, true);
+    }
+  }
+  function editValue(key: string, value: string) {
+    updateSlide(
+      { values: { ...slide.values, [key]: value } },
+      `${slide.id}:${key}`,
+    );
+  }
+
+  function reviewSlide(index: number) {
+    setIndex(index);
+    setTab("content");
+    setMobileView("input");
+    setQualityOpen(true);
   }
 
   return {
@@ -368,6 +357,7 @@ export function useStudioController({
     busy,
     conflictOpen,
     count,
+    completeOnboarding,
     deck,
     deckDialog,
     deckMenuOpen,
@@ -378,13 +368,20 @@ export function useStudioController({
     duplicateCurrentDeck,
     exportOpen,
     filmstripRef,
-    future,
+    canRedo,
+    canUndo,
+    endGroup,
+    editValue,
+    selectDeck,
+    duplicateSlide,
+    reloadDeck,
     generate,
     generationStep,
     guides,
-    history,
     index,
     mobileView,
+    needsReview,
+    newerTemplate,
     moveSlide,
     onboardingOpen,
     present,
@@ -392,6 +389,8 @@ export function useStudioController({
     quality,
     qualityOpen,
     redo,
+    renderTemplates,
+    reviewSlide,
     removeSlide,
     renameCurrentDeck,
     renameTitle,
@@ -405,25 +404,19 @@ export function useStudioController({
     setCount,
     setDeckDialog,
     setDeckMenuOpen,
-    setDraft,
     setExportOpen,
-    setFuture,
     setGuides,
-    setHistory,
     setIndex,
     setMobileView,
     setOnboardingOpen,
     setProvider,
     setQualityOpen,
     setRenameTitle,
-    setSelectedId,
     setTab,
     slide,
     slideIndex,
     tab,
     template,
     undo,
-    update,
-    updateSlide,
   };
 }

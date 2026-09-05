@@ -23,6 +23,14 @@ test("brief → editable deck → style replacement → save → PPTX → presen
   expect(created.provider).toBe("deterministic");
   expect(created.slides).toHaveLength(3);
   await expect(page.getByLabel("프레젠테이션 선택")).toHaveValue(created.id);
+  await expect(page.getByRole("tab", { name: "내용 편집" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByRole("region", { name: "3분 체험 안내" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByLabel("프레젠테이션 검토 현황")).toBeVisible();
   await page.getByRole("tab", { name: "내용 편집" }).click();
   const original = await page.locator("#slot-title").inputValue();
   await page.getByRole("button", { name: "Midnight Ink", exact: true }).click();
@@ -139,7 +147,7 @@ test("approved library template opens directly in Studio", async ({ page }) => {
   await expect(page.locator(".toast")).toContainText(
     "템플릿을 첫 슬라이드에 적용했습니다",
   );
-  await expect(page.getByLabel("템플릿 바꾸기")).toHaveValue(targetId!);
+  await expect(page.getByLabel("템플릿 바꾸기")).toHaveValue(`${targetId}@1`);
 });
 
 test("PowerPoint structure extraction opens a reviewable template draft", async ({
@@ -196,6 +204,10 @@ test("deck and slide operations support rename, duplicate, undo, redo and delete
   await expect(film).toHaveCount(initialSlides + 1);
   await page.getByRole("button", { name: "슬라이드 삭제" }).click();
   await expect(film).toHaveCount(initialSlides);
+  await expect(
+    page.getByRole("button", { name: "변경사항 저장" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Midnight Ink", exact: true }).click();
   await page.getByRole("button", { name: "변경사항 저장" }).click();
   await expect(page.locator(".toast")).toContainText("저장했습니다");
 
@@ -240,7 +252,9 @@ test("a stale editor can download its draft before loading the latest version", 
 }) => {
   const first = await context.newPage();
   const second = await context.newPage();
-  await Promise.all([first.goto("/studio"), second.goto("/studio")]);
+  await first.goto("/studio");
+  await first.getByRole("tab", { name: "내용 편집" }).waitFor();
+  await second.goto("/studio");
   await Promise.all([
     first.getByRole("tab", { name: "내용 편집" }).click(),
     second.getByRole("tab", { name: "내용 편집" }).click(),
@@ -342,4 +356,222 @@ test("experiment records actual runs instead of prefilled outcome cards", async 
   expect((await csv).suggestedFilename()).toMatch(/^atlas-evaluation-.*\.csv$/);
   await page.getByText("다음 실험은 실패 사례에서 시작합니다.").click();
   await expect(page).toHaveURL(/\/library/);
+});
+
+test("saving locks every editor control until the server acknowledges the draft", async ({
+  page,
+}) => {
+  await page.goto("/studio");
+  await page.getByRole("tab", { name: "내용 편집" }).click();
+  const title = page.locator("#slot-title");
+  await title.fill("느린 저장에서도 보존할 제목");
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/decks/*", async (route) => {
+    if (route.request().method() === "PATCH") await gate;
+    await route.continue();
+  });
+  try {
+    await page.getByRole("button", { name: "변경사항 저장" }).click();
+    await expect(title).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Midnight Ink", exact: true }),
+    ).toBeDisabled();
+    await expect(page.getByRole("button", { name: "되돌리기" })).toBeDisabled();
+    await expect(page.getByLabel("템플릿 바꾸기")).toBeDisabled();
+  } finally {
+    release();
+  }
+  await expect(page.locator(".toast")).toContainText("저장했습니다");
+  await expect(title).toBeEnabled();
+  await expect(title).toHaveValue("느린 저장에서도 보존할 제목");
+  await title.fill("저장 완료 후 추가한 내용");
+  await page.getByRole("button", { name: "변경사항 저장" }).click();
+  await expect(
+    page.getByRole("button", { name: "변경사항 저장" }),
+  ).toBeDisabled();
+  await expect(title).toBeEnabled();
+  await page.reload();
+  await page.getByRole("tab", { name: "내용 편집" }).click();
+  await expect(title).toHaveValue("저장 완료 후 추가한 내용");
+});
+
+test("old template versions render unchanged and new approved versions preserve edited text", async ({
+  page,
+}) => {
+  await page.goto("/studio");
+  await page.getByRole("tab", { name: "내용 편집" }).click();
+  await page.locator("#slot-title").fill("버전을 바꿔도 유지할 제목");
+  await page.getByRole("button", { name: "변경사항 저장" }).click();
+  await expect(page.locator(".toast")).toContainText("저장했습니다");
+  const canvas = page.locator(".slide-paper svg");
+  const original = await canvas.innerHTML();
+  const template = SEED_TEMPLATES[0];
+  const changed = await page.request.patch(`/api/templates/${template.id}`, {
+    data: {
+      expectedVersion: 1,
+      template: {
+        ...template,
+        slots: template.slots.map((slot) => ({
+          ...slot,
+          key: slot.key === "title" ? "heading" : slot.key,
+          x: slot.x + 0.01,
+        })),
+        sampleContent: {
+          eyebrow: template.sampleContent.eyebrow,
+          heading: template.sampleContent.title,
+          body: template.sampleContent.body,
+        },
+      },
+    },
+  });
+  expect(changed.status()).toBe(200);
+  for (const [status, expectedVersion] of [
+    ["in_review", 2],
+    ["approved", 3],
+  ] as const) {
+    const reviewed = await page.request.post(
+      `/api/templates/${template.id}/review`,
+      {
+        data: {
+          status,
+          expectedVersion,
+          note: "필수 내용, 좌표와 대비를 확인했습니다.",
+        },
+      },
+    );
+    expect(reviewed.status()).toBe(200);
+  }
+  await page.reload();
+  await expect(canvas).toHaveAttribute(
+    "aria-label",
+    "버전을 바꿔도 유지할 제목",
+  );
+  expect(await canvas.innerHTML()).toBe(original);
+  const exported = await (
+    await page.request.get("/api/decks/sample-deck/export?format=json")
+  ).json();
+  expect(
+    exported.templates.find((item: { id: string }) => item.id === template.id)
+      .version,
+  ).toBe(1);
+  await page.getByRole("button", { name: "승인된 v4 적용" }).click();
+  await page.getByRole("tab", { name: "내용 편집" }).click();
+  await expect(page.locator("#slot-heading")).toHaveValue(
+    "버전을 바꿔도 유지할 제목",
+  );
+  await expect(page.getByLabel("템플릿 바꾸기")).toHaveValue(
+    `${template.id}@4`,
+  );
+  await page.getByRole("button", { name: "변경사항 저장" }).click();
+  await expect(page.locator(".toast")).toContainText("저장했습니다");
+  await page.reload();
+  await page.getByRole("tab", { name: "내용 편집" }).click();
+  await expect(page.locator("#slot-heading")).toHaveValue(
+    "버전을 바꿔도 유지할 제목",
+  );
+});
+
+test("saved responses update local versions even when workspace reads are unavailable", async ({
+  page,
+}) => {
+  await page.goto("/studio");
+  await page.getByRole("tab", { name: "내용 편집" }).click();
+  let reads = 0;
+  await page.route("**/api/workspace*", (route) => {
+    reads++;
+    return route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error: { code: "TEST_OUTAGE", message: "조회 중단" },
+      }),
+    });
+  });
+  for (const value of ["첫 저장", "후속 저장"]) {
+    await page.locator("#slot-title").fill(value);
+    const response = page.waitForResponse(
+      (r) =>
+        r.request().method() === "PATCH" && r.url().includes("/api/decks/"),
+    );
+    await page
+      .getByRole("button", { name: "변경사항 저장", exact: true })
+      .click();
+    expect((await response).status()).toBe(200);
+    await expect(
+      page.getByRole("button", { name: "변경사항 저장", exact: true }),
+    ).toBeDisabled();
+  }
+  expect(reads).toBe(0);
+  await page.unroute("**/api/workspace*");
+  await page.reload();
+  await page.getByRole("tab", { name: "내용 편집" }).click();
+  await expect(page.locator("#slot-title")).toHaveValue("후속 저장");
+});
+
+test("continuous typing is one undo step and returning to saved content clears dirty state", async ({
+  page,
+}) => {
+  await page.goto("/studio");
+  await page.getByRole("tab", { name: "내용 편집" }).click();
+  const input = page.locator("#slot-title"),
+    initial = await input.inputValue();
+  await input.pressSequentially("abcdefghijklmnopqrstuvwxyz");
+  await page.getByRole("button", { name: "되돌리기", exact: true }).click();
+  await expect(input).toHaveValue(initial);
+  await expect(
+    page.getByRole("button", { name: "변경사항 저장", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "다시 실행", exact: true }).click();
+  await expect(input).not.toHaveValue(initial);
+  await expect(
+    page.getByRole("button", { name: "변경사항 저장", exact: true }),
+  ).toBeEnabled();
+});
+
+test("activity is fetched only on demand and recovers from a failed history read", async ({
+  page,
+}) => {
+  const paths: string[] = [];
+  page.on("request", (request) => paths.push(new URL(request.url()).pathname));
+  await page.goto("/studio");
+  await expect(page.getByLabel("프레젠테이션 브리프")).toBeVisible();
+  expect(paths).not.toContain("/api/events");
+  expect(paths).not.toContain("/api/experiments");
+  await page.getByRole("link", { name: "검수 인박스", exact: true }).click();
+  await page.route("**/api/events", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: { message: "이력 조회 오류" } }),
+    }),
+  );
+  await page.getByRole("button", { name: "검수 이력", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "검수·변경 이력" });
+  await expect(dialog).toContainText("이력 조회 오류");
+  await page.unroute("**/api/events");
+  await dialog.getByRole("button", { name: "다시 불러오기" }).click();
+  await expect(dialog).toContainText("workspace.created");
+});
+
+test("mobile navigation has visible names and readable status text", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/studio");
+  await expect(page.locator(".quality-pill")).toBeVisible();
+  for (const label of ["만들기", "템플릿", "검수", "실험"])
+    await expect(
+      page
+        .locator(".nav-short-label")
+        .filter({ hasText: new RegExp(`^${label}$`) }),
+    ).toBeVisible();
+  for (const selector of [".page-heading p", ".quality-pill", ".style-title"])
+    expect(
+      await page
+        .locator(selector)
+        .evaluate((node) => parseFloat(getComputedStyle(node).fontSize)),
+    ).toBeGreaterThanOrEqual(12);
 });

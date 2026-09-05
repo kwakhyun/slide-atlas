@@ -47,3 +47,21 @@
 원본 기록은 [`evaluation/user-study-results.template.csv`](../evaluation/user-study-results.template.csv)를 복사해 작성합니다. 참여자 식별 정보는 임의 코드만 사용합니다. 모든 참여자가 끝난 뒤 과제별 성공률, 완료 시간 중앙값과 힌트 중앙값을 계산하고, 반복해서 등장한 문제를 심각도와 빈도에 따라 정리합니다.
 
 표본이 3명 미만이거나 진행자가 과반의 과제에 개입한 경우에는 탐색적 관찰로만 보고합니다. 결과를 README에 추가할 때에는 참여자 수, 모집 기준, 실행 날짜와 실패 사례를 함께 공개합니다.
+
+## 기록과 집계 도구 (v2)
+
+각 과제에서 `edit_count`에 사용자가 내용을 수정한 횟수를 기록하고, `blocked_stage`에는 막힌 화면이나 단계를 기록합니다. 막힘이 없으면 `none`, 특이 관찰이 없으면 `observation`에 `none`을 입력합니다. `success_without_help`와 `facilitator_intervention`은 `true` 또는 `false`로, 수정과 오류, 되돌림, 힌트 횟수는 0 이상의 정수로 기록합니다. 완료 시간은 중단한 과제도 포함해 1초 이상의 정수로 남깁니다. `success_without_help`가 `true`이면 `hint_count`는 `0`, `facilitator_intervention`은 `false`여야 합니다.
+
+모든 참여자가 과제 1~5를 수행한 뒤 Python 3.10 이상에서 실행합니다.
+
+```bash
+python3 scripts/summarize-user-study.py \
+  --input evaluation/user-study-results.completed.csv \
+  --study-date YYYY-MM-DD \
+  --recruitment '실제 모집 기준과 경험 범위' \
+  --output docs/user-study-results.json
+```
+
+`YYYY-MM-DD`는 실제 관찰 날짜로 바꿉니다. 도구는 빈칸, 중복 과제, 미완성 참여자, 범위를 벗어난 수치, 도움 여부가 모순되는 기록을 거절합니다. 과제별 성공률, 모든 시도의 시간 중앙값, 수정 횟수와 힌트 중앙값, 오류와 되돌림 합계, 막힌 단계의 빈도를 계산합니다. 원본 CSV의 SHA-256을 함께 기록하며 참여자 코드와 자유 메모는 집계 JSON에 복사하지 않습니다.
+
+참여자가 3명 미만이거나 과반의 과제에 진행자가 개입한 경우 `exploratory-only`로 표시합니다. 독립성이나 실제 관찰 여부는 자동으로 입증할 수 없습니다. 전후 비교가 없으므로 완료 시간만으로 업무 시간 단축을 주장하지 않습니다. 현재 저장소에는 완료된 외부 관찰 결과가 없습니다.

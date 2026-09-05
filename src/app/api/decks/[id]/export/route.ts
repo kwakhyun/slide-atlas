@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { slideSvg } from "@/lib/svg";
 import { workspaceRoute } from "@/server/http";
-import { invariant } from "@/server/errors";
-import { getDeck, listTemplates } from "@/server/repository";
+import { getDeck, getDeckTemplates } from "@/server/repository";
+import { resolveSlideTemplate } from "@/lib/template-version";
 import { exportPptx } from "@/server/pptx";
 
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ export function GET(req: NextRequest, context: Context) {
     const format = z
       .enum(["json", "svg", "pptx"])
       .parse(req.nextUrl.searchParams.get("format") ?? "json");
-    const templates = await listTemplates(db, workspaceId);
+    const templates = await getDeckTemplates(db, workspaceId, [deck]);
     if (format === "svg") {
       const index = z.coerce
         .number()
@@ -26,8 +26,7 @@ export function GET(req: NextRequest, context: Context) {
         .max(deck.slides.length - 1)
         .parse(req.nextUrl.searchParams.get("slide") ?? 0);
       const slide = deck.slides[index];
-      const template = templates.find((item) => item.id === slide.templateId);
-      invariant(template, 404, "NOT_FOUND", "템플릿을 찾을 수 없습니다.");
+      const template = resolveSlideTemplate(slide, templates);
       return new NextResponse(
         slideSvg(slide, template, { slideNumber: index + 1 }),
         {

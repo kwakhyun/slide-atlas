@@ -18,18 +18,21 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
-import { api, LoadingWorkspace, useWorkspace } from "./workspace";
+import { api } from "@/lib/api-client";
+import { LoadingWorkspace, useWorkspace } from "./workspace";
 import { Modal, PageHeading, StatusBadge } from "./ui";
 import { SlideCanvas } from "./slide-canvas";
 import { TemplateForm } from "./library/template-form";
 import {
   type SlideTemplate,
+  type AuditEvent,
   type TemplateVersionSnapshot,
   type TemplateStatus,
   templateInputSchema,
   intentLabels,
   layoutLabels,
 } from "@/lib/domain";
+import { useApiResource } from "./use-api-resource";
 import { checkSlide } from "@/lib/quality";
 
 const reviewTabs: Array<{ status: TemplateStatus; label: string }> = [
@@ -39,7 +42,7 @@ const reviewTabs: Array<{ status: TemplateStatus; label: string }> = [
   { status: "approved", label: "승인 완료" },
 ];
 export function Review() {
-  const { state, refresh, notify } = useWorkspace();
+  const { state, commitTemplate, notify } = useWorkspace();
   const [status, setStatus] = useState<TemplateStatus>("in_review");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -80,8 +83,11 @@ export function Review() {
         Object.values(template.sampleContent).join(" "),
       )
     : null;
+  const activity = useApiResource<AuditEvent[]>(
+    historyOpen && state ? "/events" : null,
+  );
   const templateEvents =
-    state?.events.filter((e) => e.entityType === "template") ?? [];
+    activity.data?.filter((e) => e.entityType === "template") ?? [];
   useEffect(() => {
     if (!templateId || templateVersion === undefined) return;
     const controller = new AbortController();
@@ -105,15 +111,18 @@ export function Review() {
     if (!template) return;
     setBusy(true);
     try {
-      await api(`/templates/${template.id}/review`, {
-        method: "POST",
-        body: JSON.stringify({
-          status: next,
-          expectedVersion: template.version,
-          note,
-        }),
-      });
-      await refresh();
+      const saved = await api<SlideTemplate>(
+        `/templates/${template.id}/review`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            status: next,
+            expectedVersion: template.version,
+            note,
+          }),
+        },
+      );
+      commitTemplate(saved);
       setNote("");
       setSelectedId(null);
       notify(
@@ -435,6 +444,20 @@ export function Review() {
           onClose={() => setHistoryOpen(false)}
         >
           <div className="modal-body history-list">
+            {activity.loading && (
+              <p role="status">검수 이력을 불러오는 중입니다.</p>
+            )}
+            {activity.error && (
+              <div role="alert">
+                <p>{activity.error}</p>
+                <button className="btn" onClick={activity.retry}>
+                  다시 불러오기
+                </button>
+              </div>
+            )}
+            {!activity.loading && !activity.error && !templateEvents.length && (
+              <p>아직 기록된 검수 이력이 없습니다.</p>
+            )}
             {templateEvents.map((event) => (
               <div className="history-item" key={event.id}>
                 <span className="activity-dot" />

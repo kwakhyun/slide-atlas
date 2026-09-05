@@ -22,6 +22,7 @@ import { invariant } from "./errors";
 import { checkSlide } from "@/lib/quality";
 import { getAiUsage, isAiConfigured } from "./ai";
 import { inferIntent, rankTemplates, tokenize } from "@/lib/search";
+import { resolveSlideTemplate } from "@/lib/template-version";
 
 const hash = (token: string) =>
   createHash("sha256").update(token).digest("hex");
@@ -251,6 +252,41 @@ export async function listTemplateVersions(
     createdAt: new Date(row.created_at).toISOString(),
   }));
 }
+/** Only load immutable versions referenced by these decks, scoped to the visitor. */
+export async function getDeckTemplates(
+  db: DbSession,
+  workspaceId: string,
+  decks: Pick<Deck, "slides">[],
+): Promise<SlideTemplate[]> {
+  const references = decks.flatMap((deck) =>
+    deck.slides.map((slide) => ({
+      id: slide.templateId,
+      version: slide.templateVersion,
+    })),
+  );
+  if (!references.length) return [];
+  const { rows } = await db.query<{ data: SlideTemplate }>(
+    `SELECT DISTINCT versions.data FROM template_versions versions
+     JOIN jsonb_to_recordset($2::text::jsonb) AS ref(id text, version integer)
+     ON versions.template_id=ref.id AND versions.version=ref.version
+     WHERE versions.workspace_id=$1`,
+    [workspaceId, JSON.stringify(references)],
+  );
+  const templates = rows.map((row) => row.data);
+  for (const reference of references)
+    invariant(
+      templates.some(
+        (template) =>
+          template.id === reference.id &&
+          template.version === reference.version,
+      ),
+      422,
+      "TEMPLATE_VERSION_MISSING",
+      "생성 당시 템플릿 버전의 사본을 찾을 수 없습니다. 최신 버전으로 자동 대체하지 않습니다.",
+    );
+  return templates;
+}
+
 async function writeTemplate(
   tx: DbSession,
   workspaceId: string,
@@ -451,6 +487,24 @@ export async function insertDeck(
   deck: Deck,
 ) {
   await db.transaction(async (tx) => {
+    const templates = await getDeckTemplates(tx, workspaceId, [deck]);
+    for (const slide of deck.slides) {
+      const template = resolveSlideTemplate(slide, templates);
+      invariant(
+        template.status === "approved",
+        422,
+        "TEMPLATE_NOT_APPROVED",
+        "승인된 템플릿 버전으로 생성해 주세요.",
+      );
+      invariant(
+        Object.keys(slide.values).every((key) =>
+          template.slots.some((slot) => slot.key === key),
+        ),
+        422,
+        "INVALID_SLOT",
+        "템플릿에 정의되지 않은 슬롯입니다.",
+      );
+    }
     const count = await tx.query<{ count: string }>(
       "SELECT count(*)::text AS count FROM decks WHERE workspace_id=$1",
       [workspaceId],
@@ -490,8 +544,15 @@ export async function updateDeck(
       "VERSION_CONFLICT",
       "프레젠테이션의 최신 버전을 다시 불러와 주세요.",
     );
+    const templates = await getDeckTemplates(tx, workspaceId, [changes]);
     for (const slide of changes.slides) {
-      const template = await getTemplate(tx, workspaceId, slide.templateId);
+      const template = resolveSlideTemplate(slide, templates);
+      invariant(
+        template.status === "approved",
+        422,
+        "TEMPLATE_NOT_APPROVED",
+        "승인된 템플릿 버전을 사용해 주세요.",
+      );
       invariant(
         Object.keys(slide.values).every((k) =>
           template.slots.some((s) => s.key === k),
@@ -624,9 +685,46 @@ export async function insertExperiment(
     );
   });
 }
+export async function listEvents(
+  db: DbSession,
+  workspaceId: string,
+): Promise<AuditEvent[]> {
+  const { rows } = await db.query<{
+    id: string;
+    entity_type: AuditEvent["entityType"];
+    entity_id: string;
+    action: string;
+    detail: string;
+    created_at: Date | string;
+  }>(
+    "SELECT id,entity_type,entity_id,action,detail,created_at FROM audit_events WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 100",
+    [workspaceId],
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    entityType: r.entity_type,
+    entityId: r.entity_id,
+    action: r.action,
+    detail: r.detail,
+    createdAt: new Date(r.created_at).toISOString(),
+  }));
+}
+
+export async function listExperiments(
+  db: DbSession,
+  workspaceId: string,
+): Promise<Experiment[]> {
+  const { rows } = await db.query<{ data: Experiment }>(
+    "SELECT data FROM experiments WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 20",
+    [workspaceId],
+  );
+  return rows.map((r) => r.data);
+}
+
 export async function getWorkspaceState(
   db: Database,
   workspaceId: string,
+  includeActivity = true,
 ): Promise<WorkspaceState> {
   const aiAvailable = isAiConfigured();
   const [templates, decks, events, experiments, aiUsage] = await Promise.all([
@@ -635,35 +733,20 @@ export async function getWorkspaceState(
       "SELECT data FROM decks WHERE workspace_id=$1 ORDER BY updated_at DESC LIMIT 50",
       [workspaceId],
     ),
-    db.query<{
-      id: string;
-      entity_type: AuditEvent["entityType"];
-      entity_id: string;
-      action: string;
-      detail: string;
-      created_at: Date | string;
-    }>(
-      "SELECT id,entity_type,entity_id,action,detail,created_at FROM audit_events WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 100",
-      [workspaceId],
-    ),
-    db.query<{ data: Experiment }>(
-      "SELECT data FROM experiments WHERE workspace_id=$1 ORDER BY created_at DESC LIMIT 20",
-      [workspaceId],
-    ),
+    includeActivity ? listEvents(db, workspaceId) : Promise.resolve([]),
+    includeActivity ? listExperiments(db, workspaceId) : Promise.resolve([]),
     aiAvailable ? getAiUsage(db) : Promise.resolve(undefined),
   ]);
   return {
     templates,
+    templateVersions: await getDeckTemplates(
+      db,
+      workspaceId,
+      decks.rows.map((row) => row.data),
+    ),
     decks: decks.rows.map((r) => r.data),
-    events: events.rows.map((r) => ({
-      id: r.id,
-      entityType: r.entity_type,
-      entityId: r.entity_id,
-      action: r.action,
-      detail: r.detail,
-      createdAt: new Date(r.created_at).toISOString(),
-    })),
-    experiments: experiments.rows.map((r) => r.data),
+    events,
+    experiments,
     storage: db.mode,
     aiAvailable,
     aiUsage,

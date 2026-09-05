@@ -28,7 +28,8 @@
     "eval:pptx": "tsx scripts/evaluate-pptx.ts",
     "demo:capture": "tsx scripts/capture-demo.ts",
     "db:migrate": "tsx scripts/migrate.ts",
-    "check": "npm run docs:check && npm run lint && npm run typecheck && npm test && npm run build"
+    "check": "npm run docs:check && npm run lint && npm run typecheck && npm test && npm run build",
+    "eval:editor": "node --import tsx scripts/benchmark-editor.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.8",

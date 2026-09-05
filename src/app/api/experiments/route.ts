@@ -5,6 +5,7 @@ import { json, workspaceRoute } from "@/server/http";
 import {
   insertExperiment,
   listTemplates,
+  listExperiments,
   rateLimit,
 } from "@/server/repository";
 
@@ -21,4 +22,10 @@ export function POST(req: NextRequest) {
     await insertExperiment(db, workspaceId, result);
     return json(result, 201);
   });
+}
+
+export function GET(req: NextRequest) {
+  return workspaceRoute(req, async (db, workspaceId) =>
+    json(await listExperiments(db, workspaceId)),
+  );
 }
