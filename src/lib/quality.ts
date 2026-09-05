@@ -3,7 +3,7 @@ import {
   type QualityReport,
   type Slide,
   type SlideTemplate,
-  themeTokens,
+  slideTheme,
 } from "./domain";
 import { sourceNumbers, unsupportedNumbers } from "./numbers";
 
@@ -67,6 +67,7 @@ export function checkSlide(
     (s) => s.required && !slide.values[s.key]?.trim(),
   );
   checks.push({
+    slots: missing.map((s) => s.key),
     id: "required",
     name: "필수 내용",
     status: missing.length ? "error" : "pass",
@@ -83,6 +84,7 @@ export function checkSlide(
         s.h * 900 + 1,
   );
   checks.push({
+    slots: overflow.map((s) => s.key),
     id: "text-fit",
     name: "텍스트 수용량",
     status: overflow.length ? "warning" : "pass",
@@ -90,7 +92,7 @@ export function checkSlide(
       ? `${overflow.map((s) => s.label).join(", ")}이 글자 또는 영역 용량을 초과할 수 있습니다. 실제 렌더링을 확인하세요.`
       : "글자 제한과 예상 줄 높이가 영역 안에 들어갑니다.",
   });
-  const theme = themeTokens[slide.theme];
+  const theme = slideTheme(slide);
   const contrast = Math.min(
     contrastRatio(theme.muted, theme.bg),
     ...template.slots.map((slot) => {
@@ -118,6 +120,11 @@ export function checkSlide(
     source,
   );
   checks.push({
+    slots: template.slots
+      .filter(
+        (s) => unsupportedNumbers(slide.values[s.key] ?? "", source).length,
+      )
+      .map((s) => s.key),
     id: "source-numbers",
     name: "원문 수치 일치",
     status: added.length ? "error" : "pass",

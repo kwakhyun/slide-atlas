@@ -1,5 +1,5 @@
 import { strToU8, zipSync } from "fflate";
-import { type Deck, type SlideTemplate, themeTokens } from "@/lib/domain";
+import { type Deck, type SlideTemplate, slideTheme } from "@/lib/domain";
 import { escapeXml } from "@/lib/svg";
 import { wrapText } from "@/lib/quality";
 import { resolveSlideTemplate, slideTitle } from "@/lib/template-version";
@@ -39,11 +39,12 @@ function textBox(
   color: string,
   bold = false,
   notes = false,
+  font = "Arial",
 ) {
   const paragraphs = wrapText(text, w, fontSize)
     .map(
       (line) =>
-        `<a:p><a:pPr><a:lnSpc><a:spcPct val="125000"/></a:lnSpc></a:pPr><a:r><a:rPr lang="ko-KR" sz="${Math.round(fontSize * 60)}" b="${bold ? 1 : 0}"><a:solidFill><a:srgbClr val="${rgb(color)}"/></a:solidFill><a:latin typeface="Arial"/><a:ea typeface="Malgun Gothic"/></a:rPr><a:t>${escapeXml(line)}</a:t></a:r></a:p>`,
+        `<a:p><a:pPr><a:lnSpc><a:spcPct val="125000"/></a:lnSpc></a:pPr><a:r><a:rPr lang="ko-KR" sz="${Math.round(fontSize * 60)}" b="${bold ? 1 : 0}"><a:solidFill><a:srgbClr val="${rgb(color)}"/></a:solidFill><a:latin typeface="${escapeXml(font)}"/><a:ea typeface="${escapeXml(font === "Arial" ? "Malgun Gothic" : font)}"/></a:rPr><a:t>${escapeXml(line)}</a:t></a:r></a:p>`,
     )
     .join("");
   return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${escapeXml(name)}"/><p:cNvSpPr txBox="1"/><p:nvPr>${notes ? '<p:ph type="body" idx="1"/>' : ""}</p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(w)}" cy="${emu(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0" anchor="t"><a:noAutofit/></a:bodyPr><a:lstStyle/>${paragraphs}</p:txBody></p:sp>`;
@@ -130,7 +131,7 @@ export async function exportPptx(
       )}</a:clrScheme><a:fontScheme name="Atlas"><a:majorFont><a:latin typeface="Arial"/><a:ea typeface="Malgun Gothic"/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Arial"/><a:ea typeface="Malgun Gothic"/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="Atlas"><a:fillStyleLst>${repeat('<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>')}</a:fillStyleLst><a:lnStyleLst>${repeat('<a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>')}</a:lnStyleLst><a:effectStyleLst>${repeat("<a:effectStyle><a:effectLst/></a:effectStyle>")}</a:effectStyleLst><a:bgFillStyleLst>${repeat('<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>')}</a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`,
   );
   deck.slides.forEach((slide, index) => {
-    const t = themeTokens[slide.theme],
+    const t = slideTheme(slide),
       template = resolveSlideTemplate(slide, templates);
     const n = index + 1;
     let id = 2,
@@ -186,6 +187,8 @@ export async function exportPptx(
         slot.fontSize,
         fg,
         ["title", "value", "step"].includes(slot.role),
+        false,
+        slide.brand?.font,
       );
     }
     content +=

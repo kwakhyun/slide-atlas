@@ -141,9 +141,9 @@ export function Review() {
   return (
     <div className="page review-page">
       <PageHeading
-        eyebrow="QUALITY IS A WORKFLOW"
-        title="좋은 구조를, 함께 검증하다."
-        description="의도와 제약 조건을 확인하고, 승인 근거를 남기세요."
+        eyebrow="REVIEW"
+        title="함께 확인하고, 더 좋은 디자인으로"
+        description="검토할 템플릿을 선택하고 수정 의견이나 승인 결과를 남겨 주세요."
         actions={
           <button className="btn" onClick={() => setHistoryOpen(true)}>
             <History size={15} />

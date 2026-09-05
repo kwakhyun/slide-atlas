@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import {
   Check,
   ChevronLeft,
@@ -38,6 +39,8 @@ export function StudioStage({
   generationStep,
   slide,
   template,
+  selectedSlot,
+  focusSlot,
   quality,
   qualityOpen,
   setQualityOpen,
@@ -65,6 +68,8 @@ export function StudioStage({
   | "generationStep"
   | "slide"
   | "template"
+  | "selectedSlot"
+  | "focusSlot"
   | "quality"
   | "qualityOpen"
   | "setQualityOpen"
@@ -75,6 +80,20 @@ export function StudioStage({
   | "filmstripRef"
   | "setIndex"
 >) {
+  const [measurement, setMeasurement] = useState<{
+    slide: typeof slide;
+    slots: string[];
+  } | null>(null);
+  const measure = useCallback(
+    (slots: string[]) =>
+      setMeasurement((current) =>
+        current?.slide === slide && current.slots.join() === slots.join()
+          ? current
+          : { slide, slots },
+      ),
+    [slide],
+  );
+  const overflow = measurement?.slide === slide ? measurement.slots : [];
   return (
     <section className="stage-panel" aria-label="슬라이드 미리보기">
       <div className="stage-toolbar">
@@ -178,6 +197,8 @@ export function StudioStage({
           <SlideCanvas
             slide={slide}
             template={template}
+            selectedSlot={selectedSlot}
+            onMeasure={measure}
             showSlots={guides}
             slideNumber={slideIndex + 1}
           />
@@ -238,8 +259,36 @@ export function StudioStage({
           전체 적용
         </label>
       </div>
+      <div className="render-check" aria-live="polite">
+        {measurement?.slide === slide ? (
+          overflow.length ? (
+            <>
+              <strong>실제 미리보기에서 영역을 벗어난 내용</strong>
+              {overflow.map((key) => (
+                <button
+                  className="btn small"
+                  key={key}
+                  onClick={() => focusSlot(key)}
+                >
+                  {template.slots.find((s) => s.key === key)?.label} 수정하기
+                </button>
+              ))}
+              <p>내용을 줄이거나 하단에서 더 넓은 템플릿을 선택하세요.</p>
+            </>
+          ) : (
+            "현재 브라우저 미리보기의 텍스트가 슬롯 영역 안에 있습니다."
+          )
+        ) : (
+          "미리보기가 표시되면 실제 텍스트 영역을 검사합니다."
+        )}
+        <small>PowerPoint의 글꼴과 줄바꿈은 별도 확인이 필요합니다.</small>
+      </div>
       {qualityOpen && (
-        <QualityPanel quality={quality} onClose={() => setQualityOpen(false)} />
+        <QualityPanel
+          onFocusSlot={focusSlot}
+          quality={quality}
+          onClose={() => setQualityOpen(false)}
+        />
       )}
       <SlideFilmstrip
         deck={deck}

@@ -1,4 +1,7 @@
 "use client";
+import { CollaborationPanel } from "./studio/collaboration-panel";
+import { BrandPanel } from "./studio/brand-panel";
+import { RefinementPanel } from "./studio/refinement-panel";
 import { StudioInputPanel } from "./studio/studio-input-panel";
 import { StudioStage } from "./studio/studio-stage";
 
@@ -41,6 +44,12 @@ function StudioWorkspace({
   initialTemplateId?: string;
 }) {
   const {
+    localDraft,
+    restoreDraft,
+    selectedSlot,
+    focusSlot,
+    updateSlide,
+    setBusy,
     accessCode,
     allThemes,
     approved,
@@ -116,7 +125,7 @@ function StudioWorkspace({
       <PageHeading
         eyebrow="STUDIO"
         title="슬라이드 스튜디오"
-        description="브리프에서 시작해 내용을 다듬고, 발표 자료로 내려받으세요."
+        description="내용을 채우고 스타일을 골라 나만의 슬라이드를 완성하세요."
         actions={
           <>
             {!onboardingOpen && (
@@ -147,6 +156,77 @@ function StudioWorkspace({
           }}
           onClose={completeOnboarding}
         />
+      )}
+      {busy === "readonly" && (
+        <p className="field-hint">
+          현재 권한은 열람 또는 검수입니다. 내용 편집은 작성자가 진행합니다.
+        </p>
+      )}
+      {localDraft.recovery && (
+        <section className="recovery-banner" aria-label="보관된 초안">
+          <strong>이 브라우저에 저장하지 않은 초안이 있습니다.</strong>
+          <p>
+            초안: {localDraft.recovery.title} (v
+            {localDraft.recovery.baseVersion}) / 서버: {selected.title} (v
+            {selected.version})
+          </p>
+          {localDraft.recovery.baseVersion !== selected.version && (
+            <p>
+              서버 버전이 달라졌습니다. 복구 후 저장하면 충돌을 확인하며 서버
+              내용을 덮어쓰지 않습니다.
+            </p>
+          )}
+          <details>
+            <summary>초안과 서버 내용 비교</summary>
+            <pre>
+              {JSON.stringify(
+                {
+                  초안: localDraft.recovery.slides.map((s) => s.values),
+                  서버: selected.slides.map((s) => s.values),
+                },
+                null,
+                2,
+              )}
+            </pre>
+          </details>
+          <button
+            className="btn"
+            disabled={!!busy || dirty}
+            onClick={restoreDraft}
+          >
+            초안 복구
+          </button>
+          <button
+            className="btn"
+            disabled={!!busy}
+            onClick={localDraft.dismiss}
+          >
+            보관된 초안 삭제
+          </button>
+          <button
+            className="btn"
+            onClick={() => {
+              const url = URL.createObjectURL(
+                new Blob([JSON.stringify(localDraft.recovery, null, 2)], {
+                  type: "application/json",
+                }),
+              );
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "slide-atlas-local-draft.json";
+              a.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }}
+          >
+            초안 JSON 보관
+          </button>
+        </section>
+      )}
+      {localDraft.status && (
+        <p role="status" className="field-hint">
+          {localDraft.status} · 서버 저장과 별도로 최대 7일간 복구할 수
+          있습니다.
+        </p>
       )}
       <div className="project-strip">
         <div>
@@ -313,8 +393,8 @@ function StudioWorkspace({
       </div>
       <fieldset
         className="studio-editing"
-        disabled={!!busy}
-        aria-busy={!!busy}
+        disabled={!!busy || !!localDraft.recovery}
+        aria-busy={!!busy && busy !== "readonly"}
         aria-label="슬라이드 편집 도구"
       >
         <div className={`studio-grid mobile-${mobileView}`}>
@@ -354,6 +434,8 @@ function StudioWorkspace({
             generationStep={generationStep}
             slide={slide}
             template={template}
+            selectedSlot={selectedSlot}
+            focusSlot={focusSlot}
             quality={quality}
             qualityOpen={qualityOpen}
             setQualityOpen={setQualityOpen}
@@ -372,6 +454,27 @@ function StudioWorkspace({
           onChange={selectTemplate}
         />
       </fieldset>
+      <div className="editor-utilities" aria-label="디자인 관리 도구">
+        <CollaborationPanel key={deck.id} deck={deck} dirty={dirty} />
+        <BrandPanel
+          slide={slide}
+          busy={!!busy}
+          onApply={(brand) => updateSlide({ brand })}
+        />
+        <RefinementPanel
+          key={`${deck.id}/${slide.id}/${template.id}@${template.version}`}
+          deck={deck}
+          slide={slide}
+          template={template}
+          dirty={dirty}
+          busy={busy}
+          provider={provider}
+          accessCode={accessCode}
+          setBusy={setBusy}
+          updateSlide={updateSlide}
+          notify={notify}
+        />
+      </div>
       <div className="studio-disclaimer">
         <CircleHelp size={13} />
         <span>

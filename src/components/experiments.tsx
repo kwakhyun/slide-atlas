@@ -1,4 +1,5 @@
 "use client";
+import { ExperimentConfigPanel } from "./experiment-config-panel";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -28,6 +29,7 @@ import { EVAL_CASES } from "@/lib/evaluation";
 const percent = (value: number) => `${(value * 100).toFixed(1)}%`;
 export function Experiments() {
   const { state, notify } = useWorkspace();
+  const [configId, setConfigId] = useState("");
   const [busy, setBusy] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [allCases, setAllCases] = useState(false);
@@ -58,7 +60,10 @@ export function Experiments() {
     setBusy(true);
     try {
       const previousRunId = run?.id ?? null;
-      const result = await api<Experiment>("/experiments", { method: "POST" });
+      const result = await api<Experiment>("/experiments", {
+        method: "POST",
+        ...(configId ? { body: JSON.stringify({ configId }) } : {}),
+      });
       resource.mutate((current) =>
         [
           result,
@@ -133,8 +138,8 @@ export function Experiments() {
         </div>
       )}
       <PageHeading
-        eyebrow="LESS GUESSWORK. MORE EVIDENCE."
-        title="좋아졌다는 말 대신, 실험으로."
+        eyebrow="EXPERIMENTS"
+        title="더 잘 찾는 검색을 만들어 보세요"
         description="같은 질의와 같은 데이터로 비교하고, 다음 개선의 근거를 남기세요."
         actions={
           <button className="btn" disabled={!run} onClick={exportEvidence}>
@@ -147,7 +152,7 @@ export function Experiments() {
         <div>
           <span className="experiment-label">
             <FlaskConical size={14} />
-            RETRIEVAL EXPERIMENT / 001
+            검색 방식 비교
           </span>
           <h2>
             단어가 같을 때와,
@@ -265,6 +270,11 @@ export function Experiments() {
           </p>
         </div>
       </div>
+      <ExperimentConfigPanel
+        selected={configId}
+        onSelect={setConfigId}
+        run={run}
+      />
       <section className="evaluation-results">
         <div className="section-title">
           <div>

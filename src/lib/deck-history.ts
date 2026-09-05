@@ -10,8 +10,14 @@ export function sameDeckContent(a: Deck, b: Deck): boolean {
       return (
         slide.id === other.id &&
         slide.theme === other.theme &&
+        JSON.stringify(slide.brand ?? null) ===
+          JSON.stringify(other.brand ?? null) &&
         slide.templateId === other.templateId &&
         slide.templateVersion === other.templateVersion &&
+        JSON.stringify(slide.sources ?? {}) ===
+          JSON.stringify(other.sources ?? {}) &&
+        JSON.stringify(slide.generation ?? null) ===
+          JSON.stringify(other.generation ?? null) &&
         Object.keys(slide.values).length === Object.keys(other.values).length &&
         Object.entries(slide.values).every(
           ([key, value]) => other.values[key] === value,

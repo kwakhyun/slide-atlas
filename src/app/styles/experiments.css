@@ -3,7 +3,7 @@
     font-size: var(--font-caption);
     font-weight: 600;
     letter-spacing: 1.2px;
-    color: #9da892;
+    color: #9a9ca0;
   }
 }
 @layer pages {
@@ -13,7 +13,7 @@
     gap: 8px;
     font-size: var(--font-caption);
     letter-spacing: 1.3px;
-    color: #b0c69b;
+    color: #aeb0b3;
   }
   .experiment-hero h2 {
     font-size: 31px;
@@ -25,7 +25,7 @@
   .experiment-hero p {
     font-size: var(--font-label);
     line-height: 1.9;
-    color: #b1c29f;
+    color: #aeb0b3;
     margin-top: 10px;
   }
   .experiment-chips {
@@ -36,11 +36,11 @@
   }
   .experiment-chips span {
     padding: 4px 7px;
-    background: #304933;
-    border: 1px solid #4a633c;
+    background: #3a3c3f;
+    border: 1px solid #4d4f52;
     border-radius: 4px;
     font-size: var(--font-caption);
-    color: #b3c89c;
+    color: #afb2b5;
   }
   .experiment-diagram {
     display: flex;
@@ -55,14 +55,14 @@
     justify-content: center;
     gap: 10px;
     padding: 14px 18px;
-    border: 1px solid #5d704d;
+    border: 1px solid #5b5e62;
     border-radius: 7px;
-    color: #d3dfc4;
+    color: #d0d1d3;
     font-size: var(--font-body-small);
-    background: #2c422f;
+    background: #353739;
   }
   .diagram-input > svg {
-    color: #a4bd87;
+    color: #9fa1a5;
   }
   .diagram-branches {
     display: grid;
@@ -72,8 +72,8 @@
   }
   .diagram-branches > div {
     padding: 15px;
-    background: #2b3f2d;
-    border: 1px solid #4c623e;
+    background: #333537;
+    border: 1px solid #4d5053;
     border-radius: 7px;
     text-align: center;
   }
@@ -83,8 +83,8 @@
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: #3f5837;
-    color: #c6d9b0;
+    background: #45474a;
+    color: #c2c4c7;
     font-size: var(--font-caption);
     margin-bottom: 6px;
   }
@@ -96,18 +96,18 @@
   .diagram-branches p {
     font-size: var(--font-caption);
     margin-top: 3px;
-    color: #cadfb7;
+    color: #c9cbcd;
   }
   .diagram-branches > svg {
-    color: #849f69;
+    color: #808388;
   }
   .diagram-branches > .enhanced {
-    border-color: #94b167;
-    background: #374f32;
+    border-color: #888b90;
+    background: #3e4043;
   }
   .enhanced .diagram-letter {
-    background: #b9d497;
-    color: #344729;
+    background: #b3b5b8;
+    color: #36383a;
   }
   .diagram-output {
     display: flex;
@@ -115,9 +115,9 @@
     justify-content: center;
     gap: 7px;
     padding: 9px;
-    border: 1px dashed #5d764a;
+    border: 1px dashed #5d5f63;
     border-radius: 5px;
-    color: #b6ce9c;
+    color: #b2b5b8;
     font-size: var(--font-caption);
     letter-spacing: 0.3px;
   }
@@ -133,7 +133,7 @@
     margin-top: 19px;
   }
   .experiment-control .mini-label {
-    color: #5d6e4d;
+    color: #5a5d61;
     font-size: var(--font-caption);
   }
   .experiment-control strong {
@@ -144,7 +144,7 @@
   }
   .experiment-control p {
     font-size: var(--font-caption);
-    color: #7a8a6c;
+    color: #777a7f;
     margin-top: 4px;
   }
   .experiment-control .btn {
@@ -186,11 +186,11 @@
     gap: 8px;
     font-size: var(--font-caption);
     letter-spacing: 0.8px;
-    color: #5c6c50;
+    color: #5b5d61;
   }
   .metric-label span:last-child {
-    background: #eef3e7;
-    color: #547642;
+    background: #ecedee;
+    color: #595b5f;
     padding: 3px 6px;
     border-radius: 4px;
     font-size: var(--font-caption);
@@ -200,7 +200,7 @@
     font-size: var(--font-caption);
     font-weight: 400;
     margin-top: 7px;
-    color: #7c8d6d;
+    color: #797c81;
   }
   .metric-comparison {
     display: flex;
@@ -212,43 +212,43 @@
   .metric-comparison div > span {
     display: block;
     font-size: var(--font-caption);
-    color: #80916e;
+    color: #7b7f84;
   }
   .metric-comparison strong {
     font-size: 28px;
     font-weight: 550;
     letter-spacing: -0.8px;
-    color: #a1ad92;
+    color: #9c9fa3;
     line-height: 1.4;
     display: block;
     margin-top: 3px;
   }
   .metric-comparison > div:last-child strong {
-    color: #496e33;
+    color: #4e5053;
   }
   .metric-comparison > svg {
-    color: #b5c2a5;
+    color: #b1b3b6;
   }
   .metric-bars {
     display: flex;
     flex-direction: column;
     gap: 5px;
     margin-top: 15px;
-    background: #f6f8f2;
+    background: #f5f5f5;
     border-radius: 3px;
     min-height: 15px;
   }
   .metric-bars > div {
     height: 5px;
-    background: #c1ccb2;
+    background: #bdbfc1;
     border-radius: 3px;
     transition: width 0.4s ease;
   }
   .metric-bars > div:last-child {
-    background: #87a567;
+    background: #82858a;
   }
   .experiment-meta-card > .mini-label {
-    color: #5d704e;
+    color: #5c5e62;
     display: block;
     margin-bottom: 17px;
   }
@@ -258,17 +258,17 @@
     gap: 9px;
     margin-bottom: 12px;
     font-size: var(--font-caption);
-    color: #5b6c4e;
+    color: #5a5c60;
   }
   .experiment-meta-card div > strong {
     margin-left: auto;
-    color: #5c7b46;
+    color: #5d6064;
     font-size: var(--font-label);
     font-weight: 550;
   }
   .experiment-meta-card p {
     font-size: var(--font-caption);
-    color: #7d8e6d;
+    color: #797d82;
     line-height: 1.9;
     border-top: 1px solid var(--line);
     padding-top: 14px;
@@ -297,19 +297,19 @@
     text-align: left;
   }
   .results-table th {
-    background: #fafcf7;
+    background: #f9f9fa;
     padding: 12px 24px;
-    border-bottom: 1px solid #e8eedd;
+    border-bottom: 1px solid #e5e5e6;
     font-size: var(--font-caption);
     font-weight: 500;
-    color: #7e9169;
+    color: #797c81;
     white-space: nowrap;
   }
   .results-table td {
     padding: 14px 24px;
-    border-bottom: 1px solid #edf2e5;
+    border-bottom: 1px solid #ebebec;
     font-size: var(--font-caption);
-    color: #6d825b;
+    color: #6b6e72;
   }
   .results-table td:first-child {
     width: 40%;
@@ -318,17 +318,17 @@
     font-size: var(--font-label);
     font-weight: 500;
     display: block;
-    color: #4c6540;
+    color: #505255;
   }
   .results-table td > span:not(.delta) {
     display: block;
     font-size: var(--font-caption);
-    color: #849970;
+    color: #808489;
     margin-top: 4px;
   }
   .results-table td:first-child > span {
     font-family: monospace;
-    color: #a2b38f;
+    color: #9ea0a4;
     font-size: var(--font-caption);
   }
   .results-table .result-label {
@@ -339,20 +339,20 @@
     font-weight: 500;
   }
   .results-table .result-label.hit {
-    color: #5b813c;
+    color: #5b5e62;
   }
   .results-table .result-label.miss {
     color: #b18656;
   }
   .delta {
     font-size: var(--font-caption);
-    color: #8f9f7f;
+    color: #8b8e93;
     display: inline-block;
     white-space: nowrap;
   }
   .delta.positive {
-    color: #5e853b;
-    background: #ecf3e4;
+    color: #5d5f63;
+    background: #ebebec;
     border-radius: 4px;
     padding: 3px 6px;
   }
@@ -370,10 +370,10 @@
     gap: 6px;
     padding: 15px;
     font-size: var(--font-caption);
-    color: #7b9067;
+    color: #777b80;
   }
   .show-all:hover {
-    background: #f6f9f1;
+    background: #f5f5f5;
   }
   .evaluation-empty {
     border: 0;
@@ -384,13 +384,13 @@
   }
   .evaluation-empty h3 {
     font-size: 15px;
-    color: #4b6540;
+    color: #505255;
     margin-top: 4px;
     font-weight: 500;
   }
   .evaluation-empty > span {
     font-size: var(--font-caption);
-    color: #879e71;
+    color: #83878c;
     margin-top: 18px;
   }
   .example-queries {
@@ -401,9 +401,9 @@
   }
   .example-queries > span {
     font-size: var(--font-caption);
-    background: #f3f7ed;
-    border: 1px solid #e7eedc;
-    color: #7d9567;
+    background: #f2f2f2;
+    border: 1px solid #e4e5e6;
+    color: #7a7d82;
     border-radius: 4px;
     padding: 5px 7px;
   }
@@ -413,19 +413,19 @@
     gap: 15px;
     margin-top: 20px;
     padding: 23px;
-    color: #8ea977;
-    background: #f0f5e8;
-    border: 1px solid #e1ebd5;
+    color: #8c8f94;
+    background: #eeeeef;
+    border: 1px solid #dfe0e1;
     border-radius: 10px;
   }
   .experiment-next strong {
     font-size: var(--font-body-small);
     font-weight: 550;
-    color: #4d6c3b;
+    color: #515356;
   }
   .experiment-next p {
     font-size: var(--font-caption);
-    color: #7b9165;
+    color: #777a7f;
     margin-top: 4px;
     line-height: 1.8;
   }
@@ -435,10 +435,10 @@
 }
 @layer adjustments {
   .metric-comparison strong {
-    color: #78846d;
+    color: #74787d;
   }
   .metric-comparison > div:last-child strong {
-    color: #496e33;
+    color: #4e5053;
   }
   .results-table .result-label.miss {
     color: #916432;

@@ -114,13 +114,13 @@ export async function resolveWorkspace(
 ): Promise<{ workspaceId: string; newToken?: string }> {
   if (token && /^[\w-]{43}$/.test(token)) {
     const result = await db.query<{ id: string }>(
-      "SELECT id FROM workspaces WHERE session_hash=$1 AND created_at > NOW() - INTERVAL '7 days'",
+      "SELECT id FROM workspaces WHERE session_hash=$1 AND created_at > NOW() - INTERVAL '7 days' AND NOT EXISTS (SELECT 1 FROM workspace_members WHERE workspace_id=workspaces.id)",
       [hash(token)],
     );
     if (result.rows[0]) return { workspaceId: result.rows[0].id };
   }
   await db.query(
-    "DELETE FROM workspaces WHERE created_at < NOW() - INTERVAL '7 days'",
+    "DELETE FROM workspaces WHERE created_at < NOW() - INTERVAL '7 days' AND NOT EXISTS (SELECT 1 FROM workspace_members WHERE workspace_id=workspaces.id)",
   );
   const count = await db.query<{ count: string }>(
     "SELECT count(*)::text AS count FROM workspaces",
@@ -562,6 +562,18 @@ export async function updateDeck(
         "템플릿에 정의되지 않은 슬롯입니다.",
       );
     }
+    for (const slide of changes.slides) {
+      for (const [key, evidence] of Object.entries(slide.sources ?? {})) {
+        invariant(
+          key in slide.values &&
+            evidence.end > evidence.start &&
+            evidence.end <= current.brief.length,
+          422,
+          "INVALID_EVIDENCE",
+          "원문 근거 범위를 확인해 주세요.",
+        );
+      }
+    }
     const next = {
       ...current,
       ...changes,
@@ -738,6 +750,7 @@ export async function getWorkspaceState(
     aiAvailable ? getAiUsage(db) : Promise.resolve(undefined),
   ]);
   return {
+    workspaceId,
     templates,
     templateVersions: await getDeckTemplates(
       db,

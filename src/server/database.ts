@@ -1,5 +1,6 @@
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import { applyMigrations } from "./migrations";
 import type { PGlite } from "@electric-sql/pglite";
 
 export interface DbSession {
@@ -18,10 +19,6 @@ const runtime = globalThis as unknown as { atlasDb?: Promise<Database> };
 export async function initializeDatabase(
   options: { url?: string; dataDir?: string; memory?: boolean } = {},
 ): Promise<Database> {
-  const migration = await readFile(
-    path.join(process.cwd(), "db/migrations/001_initial.sql"),
-    "utf8",
-  );
   if (options.url) {
     const { default: postgres } = await import("postgres");
     const sql = postgres(options.url, {
@@ -38,7 +35,7 @@ export async function initializeDatabase(
     });
     await sql.begin(async (tx) => {
       await tx`SELECT pg_advisory_xact_lock(72819340)`;
-      await tx.unsafe(migration);
+      await applyMigrations(wrap(tx as unknown as typeof sql));
     });
     return {
       ...wrap(sql),
@@ -58,7 +55,17 @@ export async function initializeDatabase(
     options.dataDir ?? path.join(process.cwd(), ".data/slide-atlas");
   if (!options.memory) await mkdir(path.dirname(dataDir), { recursive: true });
   const engine: PGlite = new PGliteEngine(options.memory ? undefined : dataDir);
-  await engine.exec(migration);
+  await engine.transaction(async (tx) => {
+    await applyMigrations({
+      query: async <T>(sql: string, params?: unknown[]) => {
+        if (!params?.length) {
+          const results = await tx.exec(sql);
+          return (results.at(-1) ?? { rows: [] }) as { rows: T[] };
+        }
+        return tx.query<T>(sql, params);
+      },
+    });
+  });
   return {
     mode: options.memory ? "ephemeral" : "embedded",
     query: (sql, params = []) => engine.query(sql, params),

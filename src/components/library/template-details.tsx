@@ -1,5 +1,6 @@
 "use client";
 
+import { TemplateImpactPanel } from "./template-impact-panel";
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Braces, Copy, FileJson, Pencil } from "lucide-react";
@@ -138,6 +139,7 @@ export function TemplateDetails({
           )}
         </div>
       </div>
+      {t.status === "approved" && <TemplateImpactPanel id={t.id} />}
       <div className="modal-actions">
         <span className="modal-action-note">수정 시 재검수가 필요합니다.</span>
         {t.status === "approved" && (

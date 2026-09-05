@@ -208,12 +208,62 @@ export interface TemplateVersionSnapshot {
   createdAt: string;
 }
 
+export const brandInputSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+  font: z.enum(["Arial", "Malgun Gothic", "Pretendard"]),
+  tokens: z
+    .object({
+      bg: z.string(),
+      text: z.string(),
+      muted: z.string(),
+      accent: z.string(),
+      accentText: z.string(),
+      surface: z.string(),
+      line: z.string(),
+    })
+    .refine(
+      (t) => Object.values(t).every((v) => /^#[a-fA-F0-9]{6}$/.test(v)),
+      "색상은 #RRGGBB 형식이어야 합니다.",
+    ),
+});
+export const brandSchema = brandInputSchema.extend({
+  id: z.string().max(80),
+  version: z.number().int().positive(),
+});
+export type Brand = z.infer<typeof brandSchema>;
+export function slideTheme(slide: { theme: ThemeId; brand?: Brand }) {
+  return slide.brand
+    ? { ...slide.brand.tokens, name: slide.brand.name }
+    : themeTokens[slide.theme];
+}
+
 export const slideSchema = z.object({
   id: z.string().min(1).max(80),
   templateId: z.string().min(1).max(80),
   templateVersion: z.number().int().positive(),
   values: z.record(z.string().max(40), z.string().max(2000)),
   theme: z.enum(THEMES),
+  brand: brandSchema.optional(),
+  sources: z
+    .record(
+      z.string().max(40),
+      z.object({
+        start: z.number().int().nonnegative(),
+        end: z.number().int().positive(),
+        value: z.string().max(2000),
+      }),
+    )
+    .optional(),
+  generation: z
+    .object({
+      model: z.string().max(120),
+      promptVersion: z.string().max(80),
+      durationMs: z.number().nonnegative(),
+      inputTokens: z.number().nonnegative(),
+      outputTokens: z.number().nonnegative(),
+      keys: z.array(z.string().max(40)).max(12),
+    })
+    .optional(),
 });
 export type Slide = z.infer<typeof slideSchema>;
 export interface Deck {
@@ -247,6 +297,7 @@ export interface QualityCheck {
   status: "pass" | "warning" | "error";
   message: string;
   slot?: string;
+  slots?: string[];
 }
 export interface QualityReport {
   score: number;
@@ -300,6 +351,14 @@ export interface EvalResult {
   structureRR: number;
 }
 export interface Experiment {
+  configId?: string;
+  configHash?: string;
+  weights?: {
+    lexical: number;
+    intent: number;
+    structure: number;
+    capacity: number;
+  };
   id: string;
   name: string;
   createdAt: string;
@@ -320,6 +379,9 @@ export interface AiUsage {
   resetsAt: string;
 }
 export interface WorkspaceState {
+  workspaceId: string;
+  accountName?: string;
+  role?: "owner" | "editor" | "reviewer" | "viewer";
   templates: SlideTemplate[];
   templateVersions: SlideTemplate[];
   decks: Deck[];

@@ -3,6 +3,12 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight,
   Braces,
+  BarChart3,
+  Lightbulb,
+  MessageSquareText,
+  GitCompareArrows,
+  Workflow,
+  CalendarRange,
   Check,
   Grid2X2,
   Layers3,
@@ -109,9 +115,9 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
   return (
     <div className="page library-page">
       <PageHeading
-        eyebrow="A LIBRARY WITH INTENT"
-        title="좋은 디자인의 구조를 모으다."
-        description="예쁜 이미지를 넘어, AI가 이해하고 다시 사용할 수 있는 디자인 데이터."
+        eyebrow="TEMPLATES"
+        title="어떤 슬라이드를 만들까요?"
+        description="이야기에 맞는 템플릿을 찾고, 나만의 내용으로 완성해 보세요."
         actions={
           <>
             <button className="btn" onClick={() => setImportOpen(true)}>
@@ -135,7 +141,7 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
         <div>
           <Check size={20} />
           <span>
-            사용 가능한 구조
+            바로 쓸 수 있는 템플릿
             <strong>
               {approved}
               <small>승인 완료</small>
@@ -145,21 +151,12 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
         <div>
           <Grid2X2 size={20} />
           <span>
-            전달 의도
+            디자인 카테고리
             <strong>
               {INTENTS.length}
-              <small>의도 유형</small>
+              <small>카테고리</small>
             </strong>
           </span>
-        </div>
-        <div className="library-overview-note">
-          <span>BUILT FOR REUSE</span>
-          <p>
-            의도 → 레이아웃 → 슬롯 → 제약 조건
-            <br />
-            하나의 구조, 다양한 이야기.
-          </p>
-          <Braces size={34} />
         </div>
       </div>
       <div className="library-filters">
@@ -256,24 +253,36 @@ export function Library({ initialIntent }: { initialIntent?: Intent }) {
             setPage(1);
           }}
         >
+          <Grid2X2 size={23} />
           전체 <span>{state.templates.length}</span>
         </button>
-        {INTENTS.map((type) => (
-          <button
-            key={type}
-            className={intent === type ? "active" : ""}
-            aria-pressed={intent === type}
-            onClick={() => {
-              setIntent(type);
-              setPage(1);
-            }}
-          >
-            {intentLabels[type]}
-            <span>
-              {state.templates.filter((t) => t.intent === type).length}
-            </span>
-          </button>
-        ))}
+        {INTENTS.map((type, index) => {
+          const Icon = [
+            MessageSquareText,
+            GitCompareArrows,
+            BarChart3,
+            Workflow,
+            CalendarRange,
+            Lightbulb,
+          ][index];
+          return (
+            <button
+              key={type}
+              className={intent === type ? "active" : ""}
+              aria-pressed={intent === type}
+              onClick={() => {
+                setIntent(type);
+                setPage(1);
+              }}
+            >
+              <Icon size={23} />
+              {intentLabels[type]}
+              <span>
+                {state.templates.filter((t) => t.intent === type).length}
+              </span>
+            </button>
+          );
+        })}
       </div>
       <div className="results-heading">
         <span>

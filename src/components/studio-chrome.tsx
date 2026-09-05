@@ -98,7 +98,7 @@ export function StudioOnboarding({
   return (
     <section className="onboarding-card" aria-label="3분 체험 안내">
       <div>
-        <h2>처음이라면 예시로 시작하세요.</h2>
+        <h2>첫 디자인, 예시로 가볍게 시작하세요.</h2>
       </div>
       <ol>
         <li>
@@ -128,8 +128,10 @@ export function StudioOnboarding({
 export function QualityPanel({
   quality,
   onClose,
+  onFocusSlot,
 }: {
   quality: QualityReport;
+  onFocusSlot?: (slot: string) => void;
   onClose: () => void;
 }) {
   return (
@@ -159,6 +161,16 @@ export function QualityPanel({
           <div>
             <strong>{check.name}</strong>
             <p>{check.message}</p>
+            {check.status !== "pass" &&
+              check.slots?.map((slot) => (
+                <button
+                  className="btn small"
+                  key={slot}
+                  onClick={() => onFocusSlot?.(slot)}
+                >
+                  {slot} 수정하기
+                </button>
+              ))}
           </div>
         </div>
       ))}

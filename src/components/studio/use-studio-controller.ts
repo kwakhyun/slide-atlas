@@ -13,6 +13,7 @@ import { mapSourceToTemplate } from "@/lib/generate";
 import { checkSlide } from "@/lib/quality";
 import { remapSlideValues, resolveSlideTemplate } from "@/lib/template-version";
 import { api } from "@/lib/api-client";
+import { useLocalDraft } from "./use-local-draft";
 import { useDeckEditor } from "./use-deck-editor";
 import { createSlideReportCache } from "@/lib/slide-reports";
 import { useDeckPersistence } from "./use-deck-persistence";
@@ -57,7 +58,8 @@ export function useStudioController({
   const [generationStep, setGenerationStep] = useState(0);
   const selected =
     state.decks.find((item) => item.id === selectedId) ?? state.decks[0];
-  const editor = useDeckEditor(selected, !!busy);
+  const readOnly = state.role === "reviewer" || state.role === "viewer";
+  const editor = useDeckEditor(selected, !!busy || readOnly);
   const {
     deck,
     dirty,
@@ -70,6 +72,45 @@ export function useStudioController({
     canRedo,
     start,
   } = editor;
+  const localDraft = useLocalDraft(state.workspaceId, selected, deck, dirty);
+  const [selectedSlot, setSelectedSlot] = useState<string | undefined>();
+  function focusSlot(key: string) {
+    setTab("content");
+    setMobileView("input");
+    setGuides(true);
+    setSelectedSlot(key);
+    window.requestAnimationFrame(() =>
+      document.getElementById(`slot-${key}`)?.focus(),
+    );
+  }
+  function restoreDraft() {
+    const saved = localDraft.recovery;
+    if (!saved) return;
+    const available = [...state.templateVersions, ...state.templates];
+    if (
+      saved.slides.some(
+        (s) =>
+          !available.some(
+            (t) => t.id === s.templateId && t.version === s.templateVersion,
+          ),
+      )
+    ) {
+      notify(
+        "초안에 사용한 템플릿 버전을 불러올 수 없습니다. 초안 JSON을 내려받아 보관해 주세요.",
+        true,
+      );
+      return;
+    }
+    start(selected, {
+      ...selected,
+      version: saved.baseVersion,
+      title: saved.title,
+      slides: saved.slides,
+    });
+    localDraft.accept();
+    setTab("content");
+    setMobileView("input");
+  }
   const slideIndex = Math.min(index, deck.slides.length - 1);
   const {
     save,
@@ -213,7 +254,7 @@ export function useStudioController({
       ...deck,
       slides: deck.slides.map((item, itemIndex) =>
         allThemes || itemIndex === slideIndex
-          ? { ...item, theme: value }
+          ? { ...item, theme: value, brand: undefined }
           : item,
       ),
     });
@@ -349,12 +390,18 @@ export function useStudioController({
   }
 
   return {
+    localDraft,
+    restoreDraft,
+    selectedSlot,
+    focusSlot,
+    updateSlide,
+    setBusy,
     accessCode,
     allThemes,
     approved,
     applyTheme,
     brief,
-    busy,
+    busy: readOnly ? "readonly" : busy,
     conflictOpen,
     count,
     completeOnboarding,

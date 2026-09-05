@@ -25,6 +25,7 @@ const context = await browser.newContext({
 });
 const page = await context.newPage();
 const video = page.video();
+let completed = false;
 
 await page.addInitScript(() => {
   localStorage.setItem("slide-atlas-onboarding-v1", "done");
@@ -38,9 +39,7 @@ try {
   }
 
   await page.goto("/studio");
-  await page
-    .getByRole("heading", { name: "생각을 구조로, 구조를 디자인으로." })
-    .waitFor();
+  await page.getByRole("heading", { name: "슬라이드 스튜디오" }).waitFor();
   await page.waitForTimeout(pause);
 
   await page
@@ -73,7 +72,7 @@ try {
 
   await page.goto("/library");
   await page
-    .getByRole("heading", { name: "좋은 디자인의 구조를 모으다." })
+    .getByRole("heading", { name: "어떤 슬라이드를 만들까요?" })
     .waitFor();
   await page
     .getByRole("textbox", { name: "템플릿 검색", exact: true })
@@ -89,13 +88,13 @@ try {
 
   await page.goto("/review");
   await page
-    .getByRole("heading", { name: "좋은 구조를, 함께 검증하다." })
+    .getByRole("heading", { name: "함께 확인하고, 더 좋은 디자인으로" })
     .waitFor();
   await page.waitForTimeout(pause);
 
   await page.goto("/experiments");
   await page
-    .getByRole("heading", { name: "좋아졌다는 말 대신, 실험으로." })
+    .getByRole("heading", { name: "더 잘 찾는 검색을 만들어 보세요" })
     .waitFor();
   await page
     .getByRole("button", { name: "비교 실험 실행", exact: true })
@@ -113,11 +112,12 @@ try {
   }
   await page.getByLabel("실험 실행 비교").waitFor();
   await page.waitForTimeout(pause * 2);
+  completed = true;
 } finally {
   await context.close();
   if (video) {
     const recorded = await video.path();
-    await video.saveAs(output);
+    if (completed) await video.saveAs(output);
     if (recorded !== output) await unlink(recorded);
   }
   await browser.close();

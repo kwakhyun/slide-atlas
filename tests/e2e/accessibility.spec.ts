@@ -5,7 +5,14 @@ for (const viewport of [
   { width: 1440, height: 1000 },
   { width: 390, height: 844 },
 ]) {
-  for (const route of ["studio", "library", "review", "experiments", "about"]) {
+  for (const route of [
+    "studio",
+    "library",
+    "review",
+    "experiments",
+    "about",
+    "team",
+  ]) {
     test(`${route} at ${viewport.width}px has no WCAG A/AA violations or horizontal page overflow`, async ({
       page,
     }, testInfo) => {

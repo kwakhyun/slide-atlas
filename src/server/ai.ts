@@ -72,7 +72,12 @@ const INSTRUCTIONS = `You adapt a presentation to fixed, approved design slots. 
 export async function adaptDeckWithOpenAi(
   deck: Deck,
   templates: SlideTemplate[],
-  options: { fetcher?: typeof fetch; apiKey?: string; model?: string } = {},
+  options: {
+    fetcher?: typeof fetch;
+    apiKey?: string;
+    model?: string;
+    slotKeys?: string[];
+  } = {},
 ): Promise<Deck> {
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY;
   invariant(apiKey, 503, "AI_DISABLED", "AI API 키가 설정되지 않았습니다.");
@@ -88,13 +93,15 @@ export async function adaptDeckWithOpenAi(
     return {
       key: `slide_${i}`,
       intent: template.intent,
-      slots: template.slots.map((s) => ({
-        key: s.key,
-        label: s.label,
-        role: s.role,
-        maxChars: s.maxChars,
-        required: s.required,
-      })),
+      slots: template.slots
+        .filter((s) => !options.slotKeys || options.slotKeys.includes(s.key))
+        .map((s) => ({
+          key: s.key,
+          label: s.label,
+          role: s.role,
+          maxChars: s.maxChars,
+          required: s.required,
+        })),
     };
   });
   const schema = {
@@ -212,7 +219,7 @@ export async function adaptDeckWithOpenAi(
   }
   const slides = deck.slides.map((slide, i) => ({
     ...slide,
-    values: data[`slide_${i}`],
+    values: { ...slide.values, ...data[`slide_${i}`] },
   }));
   for (const slide of slides) {
     const quality = checkSlide(

@@ -8,7 +8,8 @@ export { useWorkspace } from "./workspace-state";
 
 import {
   ArrowUpRight,
-  Asterisk,
+  PanelsTopLeft,
+  Plus,
   BookOpen,
   ChevronRight,
   CircleHelp,
@@ -23,7 +24,9 @@ import {
 export function Workspace({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   return (
-    <WorkspaceProvider active={pathname !== "/about"}>
+    <WorkspaceProvider
+      active={pathname !== "/about" && !pathname.startsWith("/shared/")}
+    >
       <WorkspaceShell>{children}</WorkspaceShell>
     </WorkspaceProvider>
   );
@@ -65,7 +68,7 @@ function WorkspaceShell({ children }: { children: ReactNode }) {
   const { state, error, refresh } = useWorkspace();
   const current = navigation.find((n) => pathname.startsWith(n.href));
   const content =
-    error && !state ? (
+    error && !state && pathname !== "/team" ? (
       <div className="connection-error">
         <CircleHelp size={36} />
         <h1>작업 공간에 연결하지 못했어요</h1>
@@ -82,19 +85,22 @@ function WorkspaceShell({ children }: { children: ReactNode }) {
     );
   return (
     <>
-      {pathname.startsWith("/present") ? (
+      {pathname.startsWith("/present") || pathname.startsWith("/shared/") ? (
         content
       ) : (
         <>
           <a href="#main-content" className="skip-link">
             본문으로 바로가기
           </a>
-          <aside className="sidebar" aria-label="워크스페이스 메뉴">
+          <aside
+            className={`sidebar ${pathname === "/studio" ? "editor-sidebar" : ""}`}
+            aria-label="워크스페이스 메뉴"
+          >
             <Link href="/studio" className="brand" aria-label="Slide Atlas 홈">
               <span className="brand-mark">
-                <Asterisk size={30} strokeWidth={3} />
+                <PanelsTopLeft size={27} strokeWidth={2.4} />
               </span>
-              <span>
+              <span className="brand-wordmark">
                 slide<span className="brand-light">atlas</span>
                 <span className="brand-dot">.</span>
               </span>
@@ -104,12 +110,20 @@ function WorkspaceShell({ children }: { children: ReactNode }) {
                 <Layers3 size={17} />
               </span>
               <div>
-                <strong>Design Intelligence</strong>
-                <span>Personal workspace</span>
+                <strong>{state?.accountName ?? "나의 작업 공간"}</strong>
+                <span>
+                  {state?.accountName
+                    ? "팀과 함께 작업 중"
+                    : "개인 디자인 공간"}
+                </span>
               </div>
               <span className="tiny-dot" />
             </div>
-            <div className="nav-label">WORKSPACE</div>
+            <Link className="create-design btn primary" href="/studio">
+              <Plus size={18} />
+              <span>디자인 만들기</span>
+            </Link>
+            <div className="nav-label">내 작업</div>
             <nav>
               {navigation.map((item) => (
                 <Link
@@ -122,7 +136,13 @@ function WorkspaceShell({ children }: { children: ReactNode }) {
                   }
                 >
                   <item.icon size={19} />
-                  <span className="nav-full-label">{item.label}</span>
+                  <span className="nav-full-label">
+                    {item.shortLabel === "만들기"
+                      ? "디자인 편집"
+                      : item.shortLabel === "템플릿"
+                        ? "템플릿 둘러보기"
+                        : item.label}
+                  </span>
                   <span className="nav-short-label">{item.shortLabel}</span>
                   {item.href === "/review" &&
                     !!state?.templates.filter((t) => t.status === "in_review")
@@ -142,13 +162,13 @@ function WorkspaceShell({ children }: { children: ReactNode }) {
               <div className="workspace-note">
                 <div className="note-icon">
                   <Layers3 size={19} />
-                  <span>YOUR OWN SANDBOX</span>
+                  <span>나만의 디자인 공간</span>
                 </div>
-                <strong>마음껏 실험하세요.</strong>
+                <strong>아이디어를 펼쳐보세요.</strong>
                 <p>
-                  변경사항은 나만의 데모 공간에
-                  <br />
-                  저장됩니다. 7일 후 자동 삭제.
+                  {state?.accountName
+                    ? "계정에 연결된 작업 공간입니다. 구성원 권한은 계정 / 팀에서 관리합니다."
+                    : "방문자별 데모 공간입니다. 7일이 지나면 다음 공간 생성 시 정리합니다."}
                 </p>
                 <Link href="/about">
                   프로젝트 살펴보기 <ArrowUpRight size={14} />
@@ -162,21 +182,29 @@ function WorkspaceShell({ children }: { children: ReactNode }) {
               <div className="profile">
                 <span className="avatar">KH</span>
                 <div>
-                  <strong>Portfolio workspace</strong>
-                  <span>Built by kwakhyun</span>
+                  <strong>Slide Atlas</strong>
+                  <span>프레젠테이션 워크스페이스</span>
                 </div>
                 <span className="status-light" />
               </div>
             </div>
           </aside>
-          <div className="app-frame">
+          <div
+            className={`app-frame ${pathname === "/studio" ? "editor-frame" : ""}`}
+          >
             <header className="topbar">
               <div className="breadcrumb">
-                <span>Workspace</span>
+                <Link href="/library">내 작업 공간</Link>
                 <ChevronRight size={13} />
-                <strong>{current?.english ?? "Project guide"}</strong>
+                <strong>
+                  {current?.shortLabel ??
+                    (pathname === "/team" ? "계정 / 팀" : "프로젝트 가이드")}
+                </strong>
               </div>
               <div className="topbar-right">
+                <Link href="/team" className="btn small">
+                  계정 / 팀
+                </Link>
                 <span className="engine-badge">
                   <span className="status-light" />
                   {state?.aiAvailable ? "AI 연결됨" : "규칙 기반 데모"}
@@ -198,8 +226,8 @@ function WorkspaceShell({ children }: { children: ReactNode }) {
             <main id="main-content">{content}</main>
             <footer className="app-footer">
               <span>
-                SLIDE ATLAS <span className="footer-divider">/</span> A design
-                intelligence workbench
+                SLIDE ATLAS <span className="footer-divider">/</span> 나의
+                아이디어를 담는 슬라이드
               </span>
               <span>
                 {state?.storage === "postgres"

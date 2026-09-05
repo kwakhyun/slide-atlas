@@ -1,0 +1,45 @@
+{
+  "date": "2026-09-05",
+  "scope": "local working tree; no deployment or live model calls",
+  "runtime": {
+    "node": "22.21.0",
+    "platform": "macOS arm64",
+    "database": "PGlite",
+    "projectNodeTarget": "24.x",
+    "browserServerNode": "24.19.0"
+  },
+  "unitTests": 84,
+  "e2eTests": 31,
+  "status": "passed",
+  "checks": {
+    "unit": "84 passed in the final full suite; initialization hook timeout 120000ms, test timeout unchanged at 30000ms",
+    "lint": "passed across the project",
+    "format": "passed across the project; final documentation checked separately",
+    "docs": "passed: local links, JSON and documented test counts",
+    "build": "final production build and TypeScript passed",
+    "browser": "31 passed in the final full suite on Node.js 24.19.0 after health readiness; 1440px and 390px screenshots refreshed",
+    "searchEvaluation": "recorded development-set results reproduced",
+    "holdoutCatalog": "matches current catalog; no independent results collected",
+    "aiInputValidation": "24 synthetic inputs validated; liveCalls=0",
+    "pptxEvaluation": "12 synthetic round-trip cases reproduce the recorded metrics",
+    "userStudyAggregator": "synthetic validation passed: incomplete inputs rejected, median and success-rate calculations checked, contradictory help records rejected; no real observations",
+    "editorBenchmark": "12 slides, 100 edits: quality checks 1313 -> 112; synthetic CPU measurement in editor-benchmark.json"
+  },
+  "externalValidation": {
+    "independentSearchHoldout": "not collected",
+    "userStudy": "not collected",
+    "liveAi": "not run",
+    "publicDeployment": "not performed"
+  },
+  "environmentNotes": [
+    "Earlier development-server verification hit an internal Turbopack restore panic; final browser checks use the production build.",
+    "Under local system load, an earlier unit run timed out in PGlite initialization and the first browser run exceeded initial workspace loading wait. Final unit run passed with 120s initialization hooks; final browser run passed after the health endpoint confirmed readiness.",
+    "Build and unit runner: Node.js 22.21.0. Final browser server: Node.js 24.19.0. External PostgreSQL CI was not run."
+  ],
+  "durationsSeconds": {
+    "fullUnitSuite": 80.33
+  },
+  "applicationSourceSha256": "bebcc2acdb3ff8128770ada07c40c3a8f3bc23e48a36630ae557a48df0c243dd",
+  "fullE2eDurationReported": "1.4m",
+  "sourceHashMethod": "SHA256 of sorted repository-relative src file paths, NUL, file bytes, NUL"
+}

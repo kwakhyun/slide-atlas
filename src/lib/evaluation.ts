@@ -92,6 +92,7 @@ export function evaluateCases(
     id?: string;
     name: string;
     datasetVersion: string;
+    weights?: import("./experiment-config").ExperimentConfig["weights"];
   },
 ): Experiment {
   const started = performance.now();
@@ -111,10 +112,14 @@ export function evaluateCases(
       ...query,
       strategy: "lexical",
     }).map((m) => m.template.id);
-    const structureIds = rankTemplates(approved, {
-      ...query,
-      strategy: "structure",
-    }).map((m) => m.template.id);
+    const structureIds = rankTemplates(
+      approved,
+      {
+        ...query,
+        strategy: "structure",
+      },
+      options.weights,
+    ).map((m) => m.template.id);
     return {
       id: test.id,
       query: test.query,

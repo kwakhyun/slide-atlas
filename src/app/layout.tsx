@@ -8,6 +8,7 @@ import "./styles/workflow.css";
 import "./styles/experiments.css";
 import "./styles/about.css";
 import "./styles/studio.css";
+import "./styles/design-system.css";
 
 export const metadata: Metadata = {
   title: {

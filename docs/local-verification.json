@@ -1,45 +1,53 @@
 {
   "date": "2026-09-05",
-  "scope": "local working tree; no deployment or live model calls",
+  "scope": "final UI/UX review, refreshed screenshots and walkthrough in local production build; no live model calls",
   "runtime": {
     "node": "22.21.0",
     "platform": "macOS arm64",
     "database": "PGlite",
     "projectNodeTarget": "24.x",
+    "buildNode": "24.19.0",
     "browserServerNode": "24.19.0"
   },
-  "unitTests": 84,
-  "e2eTests": 31,
+  "unitTests": 95,
+  "e2eTests": 45,
   "status": "passed",
   "checks": {
-    "unit": "84 passed in the final full suite; initialization hook timeout 120000ms, test timeout unchanged at 30000ms",
+    "unit": "95 passed across 7 files; initialization hook timeout 120000ms",
     "lint": "passed across the project",
-    "format": "passed across the project; final documentation checked separately",
-    "docs": "passed: local links, JSON and documented test counts",
-    "build": "final production build and TypeScript passed",
-    "browser": "31 passed in the final full suite on Node.js 24.19.0 after health readiness; 1440px and 390px screenshots refreshed",
-    "searchEvaluation": "recorded development-set results reproduced",
-    "holdoutCatalog": "matches current catalog; no independent results collected",
-    "aiInputValidation": "24 synthetic inputs validated; liveCalls=0",
-    "pptxEvaluation": "12 synthetic round-trip cases reproduce the recorded metrics",
-    "userStudyAggregator": "synthetic validation passed: incomplete inputs rejected, median and success-rate calculations checked, contradictory help records rejected; no real observations",
-    "editorBenchmark": "12 slides, 100 edits: quality checks 1313 -> 112; synthetic CPU measurement in editor-benchmark.json"
+    "format": "passed across the project",
+    "docs": "local links, JSON and documented test counts checked",
+    "build": "production build and TypeScript passed on Node.js 24.19.0; all 5 migration files included in each of 23 API bundles",
+    "browser": "45 passed in final full suite, including keyboard account login and 768px/1024px editor input, undo and toolbar visibility",
+    "accessibility": "6 routes at 1440px and 390px plus the template dialog; no axe WCAG A/AA violations or horizontal page overflow",
+    "expandedPanels": "passed in the preceding redesign review at 1440px and 390px; these panels were not changed during final polish",
+    "searchEvaluation": "unchanged by UI redesign; see feature-verification-2026-09-05.json for previous check",
+    "holdoutCatalog": "unchanged by UI redesign; see feature-verification-2026-09-05.json for previous check",
+    "aiInputValidation": "unchanged by UI redesign; see feature-verification-2026-09-05.json for previous check",
+    "pptxEvaluation": "unchanged by UI redesign; see feature-verification-2026-09-05.json for previous check",
+    "designQa": "passed; see design-qa.md",
+    "screenshots": "7 current viewport screenshots recaptured and visually inspected; historical audit and live-AI screenshots explicitly labelled",
+    "walkthrough": "updated capture script completed the generation, edit/save, library, review and experiment flow"
   },
   "externalValidation": {
+    "externalPostgreSQL": "not run",
     "independentSearchHoldout": "not collected",
     "userStudy": "not collected",
     "liveAi": "not run",
     "publicDeployment": "not performed"
   },
   "environmentNotes": [
-    "Earlier development-server verification hit an internal Turbopack restore panic; final browser checks use the production build.",
-    "Under local system load, an earlier unit run timed out in PGlite initialization and the first browser run exceeded initial workspace loading wait. Final unit run passed with 120s initialization hooks; final browser run passed after the health endpoint confirmed readiness.",
-    "Build and unit runner: Node.js 22.21.0. Final browser server: Node.js 24.19.0. External PostgreSQL CI was not run."
+    "Uses the local production server with in-memory PGlite and AI disabled.",
+    "Initial design checks identified low text contrast and a sidebar token overriding mobile width; corrected before the final passing suite.",
+    "The added tablet test was adjusted to use the existing input/preview switch below 800px.",
+    "Final review aligned account input help, browser form validation and keyboard submit; corrected stale guide copy and screenshot/video documentation."
   ],
   "durationsSeconds": {
-    "fullUnitSuite": 80.33
+    "fullUnitSuite": 5.73,
+    "fullE2eSuite": 30.0
   },
-  "applicationSourceSha256": "bebcc2acdb3ff8128770ada07c40c3a8f3bc23e48a36630ae557a48df0c243dd",
-  "fullE2eDurationReported": "1.4m",
-  "sourceHashMethod": "SHA256 of sorted repository-relative src file paths, NUL, file bytes, NUL"
+  "sourceHashMethod": "SHA256 of sorted repository-relative src file paths, NUL, file bytes, NUL",
+  "previousEditorVerification": "editor-verification-2026-09-05.json",
+  "applicationSourceSha256": "4feaaa013313b76e65bda73eade675abe4703348a6b6025b6fb34adbbd45a1c3",
+  "previousFeatureVerification": "feature-verification-2026-09-05.json"
 }

@@ -14,7 +14,7 @@
     font-size: 15px;
     max-width: 600px;
     line-height: 1.9;
-    color: #798c6c;
+    color: #787b80;
     margin-top: 23px;
     word-break: keep-all;
   }
@@ -44,7 +44,7 @@
   }
   .about-flow a:hover {
     transform: translateY(-3px);
-    border-color: #aabb95;
+    border-color: #a5a7ab;
   }
   .about-flow a > span {
     display: flex;
@@ -52,7 +52,7 @@
     align-items: center;
     font-size: var(--font-caption);
     letter-spacing: 1px;
-    color: #58684b;
+    color: #56595d;
   }
   .about-flow h2 {
     font-size: 15px;
@@ -63,13 +63,13 @@
   .about-flow p {
     font-size: var(--font-label);
     line-height: 1.9;
-    color: #7f956b;
+    color: #7c7f84;
     margin-top: 8px;
     word-break: keep-all;
   }
   .about-flow a > svg {
     margin-top: 22px;
-    color: #879f72;
+    color: #84888d;
   }
   .about-columns {
     display: grid;
@@ -86,13 +86,13 @@
   .about-columns section > p {
     font-size: 13px;
     line-height: 2.1;
-    color: #798d68;
+    color: #767a7f;
     margin-top: 22px;
     word-break: keep-all;
   }
   .about-columns p > strong {
     font-weight: 600;
-    color: #587746;
+    color: #5b5e62;
   }
   .about-columns ul {
     list-style: none;
@@ -100,19 +100,19 @@
     margin: 22px 0 0;
   }
   .about-columns li {
-    border-bottom: 1px solid #e1e9d8;
+    border-bottom: 1px solid #dfe0e2;
     padding: 12px 0;
   }
   .about-columns li > strong {
     display: block;
     font-size: var(--font-label);
     font-weight: 600;
-    color: #5c7948;
+    color: #5d6064;
   }
   .about-columns li > span {
     display: block;
     font-size: var(--font-label);
-    color: #7f966b;
+    color: #7c8085;
     line-height: 1.9;
     margin-top: 3px;
   }
@@ -148,19 +148,19 @@
     place-items: center;
     font-size: var(--font-label);
     border-radius: 50%;
-    background: #eef4e5;
-    color: #6e8e54;
+    background: #ececed;
+    color: #6d7075;
     flex-shrink: 0;
   }
   .guide-steps li strong {
     font-size: 13px;
     font-weight: 550;
-    color: #4b673c;
+    color: #4f5154;
   }
   .guide-steps li p {
     font-size: var(--font-label);
     line-height: 1.9;
-    color: #7d926b;
+    color: #7a7e83;
     margin-top: 4px;
   }
   .limitations {
@@ -169,23 +169,23 @@
     align-items: flex-start;
     gap: 20px;
     padding: 30px;
-    background: #eff3e8;
-    border: 1px solid #dfe8d4;
+    background: #ededee;
+    border: 1px solid #dddedf;
     border-radius: 12px;
   }
   .limitations > svg {
-    color: #819e68;
+    color: #7f8287;
     margin-top: 5px;
   }
   .limitations h2 {
     font-size: 16px;
     font-weight: 550;
-    color: #4a6a37;
+    color: #4e5053;
   }
   .limitations p {
     font-size: var(--font-label);
     line-height: 2;
-    color: #748d60;
+    color: #72767b;
     margin-top: 12px;
     word-break: keep-all;
   }
@@ -199,14 +199,14 @@
   .about-signoff > span {
     font-size: var(--font-caption);
     letter-spacing: 1px;
-    color: #59694d;
+    color: #585a5e;
   }
   .about-signoff > a {
     display: flex;
     align-items: center;
     gap: 5px;
     font-size: var(--font-label);
-    color: #536f40;
+    color: #54575b;
   }
 }
 @layer adjustments {

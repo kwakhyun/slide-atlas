@@ -1,3 +1,4 @@
+import { defaultWeights } from "./experiment-config";
 import {
   type Intent,
   type SearchMatch,
@@ -119,6 +120,7 @@ export function detectIntent(text: string): Intent {
 export function rankTemplates(
   templates: SlideTemplate[],
   query: SearchQuery,
+  weights = defaultWeights,
 ): SearchMatch[] {
   const tokens = tokenize(query.q);
   const intent = query.intent ?? inferIntent(query.q);
@@ -156,10 +158,10 @@ export function rankTemplates(
         query.strategy === "lexical"
           ? lexical
           : Math.round(
-              lexical * 0.2 +
-                intentScore * 0.45 +
-                structure * 0.25 +
-                capacity * 0.1,
+              lexical * weights.lexical +
+                intentScore * weights.intent +
+                structure * weights.structure +
+                capacity * weights.capacity,
             );
       const reasons: string[] = [];
       if (template.intent === intent) reasons.push("전달 의도 일치");

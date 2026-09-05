@@ -1,4 +1,5 @@
 import "server-only";
+import { accountSession, canWrite } from "./team";
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -170,6 +171,25 @@ export async function workspaceRoute(
     req,
     async (requestId) => {
       const db = await getDatabase();
+      const accountToken = req.cookies.get("atlas_account")?.value;
+      const account = await accountSession(db, accountToken);
+      invariant(
+        !accountToken || account,
+        401,
+        "SESSION_EXPIRED",
+        "계정 세션이 만료되었거나 권한이 해제되었습니다. 다시 로그인해 주세요.",
+      );
+      if (account) {
+        invariant(
+          canWrite(account.role, req.nextUrl.pathname, req.method),
+          403,
+          "ROLE_DENIED",
+          "이 작업에는 작성자 또는 검수자 권한이 필요합니다.",
+        );
+        if (req.method !== "GET")
+          await rateLimit(db, account.workspaceId, "write", 60);
+        return handler(db, account.workspaceId, requestId);
+      }
       const resolved = await resolveWorkspace(
         db,
         req.cookies.get(COOKIE)?.value,

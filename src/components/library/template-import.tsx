@@ -1,5 +1,6 @@
 "use client";
 
+import { BatchImport } from "./batch-import";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -163,6 +164,13 @@ export function TemplateImportModal({
                   {warning}
                 </p>
               ))}
+              <BatchImport
+                key={
+                  result.fileName +
+                  result.candidates.map((c) => c.template.name).join()
+                }
+                result={result}
+              />
               <div
                 className="extraction-candidates"
                 role="radiogroup"

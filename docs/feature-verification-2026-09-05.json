@@ -1,0 +1,49 @@
+{
+  "date": "2026-09-05",
+  "scope": "feature upgrades in local working tree; no deployment or live model calls",
+  "runtime": {
+    "node": "22.21.0",
+    "platform": "macOS arm64",
+    "database": "PGlite",
+    "projectNodeTarget": "24.x",
+    "buildNode": "24.19.0",
+    "browserServerNode": "24.19.0"
+  },
+  "unitTests": 95,
+  "e2eTests": 43,
+  "status": "passed",
+  "checks": {
+    "unit": "95 passed across 7 files; initialization hook timeout 120000ms",
+    "lint": "passed across the project",
+    "format": "passed across the project",
+    "docs": "local links, JSON and documented test counts checked",
+    "build": "production build and TypeScript passed on Node.js 24.19.0; all 5 migration files included in each of 23 API bundles",
+    "browser": "43 passed in the final full suite; draft recovery, measured overflow, partial generation and evidence, batch operations, brands, accounts, role restrictions, one-use invitations, comments and share revocation",
+    "accessibility": "6 routes at 1440px and 390px plus the template dialog; no axe WCAG A/AA violations or horizontal page overflow",
+    "expandedPanels": "additional one-off check of expanded collaboration, brand and refinement panels at 1440px and 390px: no axe violations or horizontal overflow; screenshots visually inspected",
+    "searchEvaluation": "recorded development-set results reproduced with --check",
+    "holdoutCatalog": "matches current catalog; no independent results collected",
+    "aiInputValidation": "24 synthetic inputs validated; liveCalls=0",
+    "pptxEvaluation": "12 synthetic round-trip cases reproduce recorded metrics",
+    "teamLabelFollowUp": "After correcting the Team breadcrumb, production build and the two team accessibility scenarios passed again (2.2s)."
+  },
+  "externalValidation": {
+    "externalPostgreSQL": "not run",
+    "independentSearchHoldout": "not collected",
+    "userStudy": "not collected",
+    "liveAi": "not run",
+    "publicDeployment": "not performed"
+  },
+  "environmentNotes": [
+    "Uses the local production server with in-memory PGlite and AI disabled.",
+    "An earlier browser run found draft recovery after save and an ambiguous comments SQL ordering; both were fixed before the final passing suite.",
+    "Browser assertions were narrowed to the slide canvas and public-share error message to exclude unrelated icons and the Next.js route announcer."
+  ],
+  "durationsSeconds": {
+    "fullUnitSuite": 4.53,
+    "fullE2eSuite": 26.2
+  },
+  "sourceHashMethod": "SHA256 of sorted repository-relative src file paths, NUL, file bytes, NUL",
+  "previousEditorVerification": "editor-verification-2026-09-05.json",
+  "applicationSourceSha256": "cc63ee548e0bda339ba02f61724ac38af807839eecc7fc7925cd14c54d553bc1"
+}
