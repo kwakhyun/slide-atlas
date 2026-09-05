@@ -41,7 +41,7 @@ export const ratingFields = {
   meaning: "원문 의미 보존",
   numbers: "수치와 주장 연결",
   constraints: "조건과 불확실성 보존",
-  usable: "큰 재작성 없이 사용 가능",
+  usable: "내용을 대폭 다시 쓰지 않고 사용 가능",
 } as const;
 const judgment = z.enum(["pass", "fail", "unsure"]);
 export const ratingSchema = z.object({

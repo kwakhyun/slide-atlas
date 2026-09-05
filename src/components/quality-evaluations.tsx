@@ -304,7 +304,7 @@ function EvaluationDetail({
             disabled={rating.note.trim().length < 5}
             onClick={() => onWrite({ action: "rate", rating })}
           >
-            판정 보관
+            평가 결과 저장
           </button>
         </fieldset>
       )}

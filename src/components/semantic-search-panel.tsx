@@ -53,9 +53,10 @@ export function SemanticSearchPanel() {
     >
       <summary>의미 검색과 기존 검색 비교</summary>
       <p>
-        키워드, 구조, 임베딩과 구조를 결합한 검색을 같은 승인 템플릿에서
-        비교합니다. 검색어와 템플릿 설명이 OpenAI로 전송됩니다. 새 임베딩에
-        비용이 발생하며 캐시를 재사용합니다.
+        동일한 승인 템플릿을 대상으로 키워드 검색, 구조 검색, 임베딩과 구조를
+        결합한 검색을 비교합니다. 검색어와 템플릿 설명이 OpenAI로 전송됩니다. 새
+        임베딩을 생성하면 비용이 발생하며, 캐시가 있으면 저장된 임베딩을 다시
+        사용합니다.
       </p>
       <label>
         비교할 검색어
@@ -138,7 +139,7 @@ export function SemanticSearchPanel() {
         </p>
       )}
       <label>
-        보관한 비교
+        검색 비교 기록
         <select
           value={run?.id ?? ""}
           onChange={(e) => setSelected(e.target.value)}
@@ -159,8 +160,9 @@ export function SemanticSearchPanel() {
           </p>
           <p>
             키워드 연산 {run.timing.lexicalMs.toFixed(2)}ms, 구조 연산{" "}
-            {run.timing.structureMs.toFixed(2)}ms. 전체 시간에는 캐시와 모델
-            응답이 포함됩니다. 금액은 운영 계정의 과금 조건을 따릅니다.
+            {run.timing.structureMs.toFixed(2)}ms. 전체 시간에는 캐시 조회와
+            모델 응답을 기다리는 시간이 포함됩니다. 실제 청구 금액은 운영 계정의
+            과금 조건에 따라 달라집니다.
           </p>
           <div className="search-comparison">
             {(["lexical", "structure", "hybrid"] as const).map((key) => (
